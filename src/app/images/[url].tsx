@@ -1,8 +1,7 @@
 import { CustomImage } from "@/src/presentation/components/CustomImage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import {
-  Alert,
   Pressable,
   ScrollView,
   StatusBar,
@@ -23,25 +22,14 @@ export default function ImageDetailScreen() {
   }>();
 
   const router = useRouter();
-  const {
-    saveImage,
-    savingImage,
-    deleteImage,
-    deletingImage,
-    savedImages,
-    refreshSavedImages,
-  } = useImageOperations();
+  const { saveImage, savingImage, deleteImage, deletingImage, savedImages } =
+    useImageOperations();
 
   // Estado derivado calculado com useMemo para evitar recálculos desnecessários
   const isImageSaved = useMemo(
     () => savedImages.some((img: Image) => img.id === id),
     [savedImages, id]
   );
-
-  // Atualiza as imagens salvas quando a tela é focada
-  useEffect(() => {
-    refreshSavedImages();
-  }, [refreshSavedImages]);
 
   // Construir URL do Picsum com altura fixa de 400px
   const getPicsumImageUrl = (
@@ -57,7 +45,6 @@ export default function ImageDetailScreen() {
 
   const handleSaveImage = async () => {
     if (!id || !author || !width || !height) {
-      Alert.alert("Erro", "Informações da imagem incompletas");
       return;
     }
 
@@ -71,9 +58,8 @@ export default function ImageDetailScreen() {
 
     try {
       await saveImage(image);
-      Alert.alert("Sucesso", "Imagem salva com sucesso!");
     } catch {
-      Alert.alert("Erro", "Falha ao salvar imagem");
+      // Erro tratado pelo ErrorObserver global
     }
   };
 
@@ -83,30 +69,15 @@ export default function ImageDetailScreen() {
 
   const handleDeleteImage = async () => {
     if (!id) {
-      Alert.alert("Erro", "ID da imagem não encontrado");
       return;
     }
 
-    Alert.alert(
-      "Confirmar Exclusão",
-      `Deseja realmente excluir a imagem de ${author}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteImage(id);
-              Alert.alert("Sucesso", "Imagem excluída com sucesso!");
-              router.back();
-            } catch {
-              Alert.alert("Erro", "Falha ao excluir imagem");
-            }
-          },
-        },
-      ]
-    );
+    try {
+      await deleteImage(id);
+      router.back();
+    } catch {
+      // Erro tratado pelo ErrorObserver global
+    }
   };
 
   // Verificar se a URL existe
@@ -128,11 +99,7 @@ export default function ImageDetailScreen() {
       <StatusBar barStyle={"light-content"} />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.image}>
-          <CustomImage
-            source={{ uri: imageUrl }}
-            style={styles.image}
-            resizeMode="contain"
-          />
+          <CustomImage source={{ uri: imageUrl }} style={styles.image} />
         </View>
 
         <View style={styles.metadataContainer}>

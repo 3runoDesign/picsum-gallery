@@ -1,39 +1,40 @@
-import { useRouter } from "expo-router";
 import React, { memo } from "react";
-import { Dimensions, FlatList, Pressable, StyleSheet } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 import { Image } from "../../domain/entities/Image";
-import { ImageWithLocalSupport } from "./ImageWithLocalSupport";
+import { CustomImage } from "./CustomImage";
 
 interface ImageGridProps {
   images: Image[];
+  onImagePress?: (image: Image) => void;
+  numColumns?: number;
+  contentContainerStyle?: any;
 }
 
-const numColumns = 3;
-const { width } = Dimensions.get("window");
-const itemSize = (width - 20) / numColumns; // 10 de padding horizontal
-
-export const ImageGrid = memo(({ images }: ImageGridProps) => {
-  const router = useRouter();
-
-  const handlePress = (image: Image) => {
-    router.push({
-      pathname: "/images/[url]" as any,
-      params: { url: image.url },
-    });
-  };
+export const ImageGrid = memo<ImageGridProps>(({
+  images,
+  onImagePress,
+  numColumns = 2,
+  contentContainerStyle,
+}) => {
+  const renderImage = ({ item }: { item: Image }) => (
+    <CustomImage
+      source={{ uri: item.url }}
+      style={styles.image}
+      onPress={() => onImagePress?.(item)}
+    />
+  );
 
   return (
-    <FlatList
-      data={images}
-      keyExtractor={(item) => item.id}
-      numColumns={numColumns}
-      contentContainerStyle={styles.container}
-      renderItem={({ item }) => (
-        <Pressable onPress={() => handlePress(item)}>
-          <ImageWithLocalSupport image={item} style={styles.image} />
-        </Pressable>
-      )}
-    />
+    <View style={styles.container}>
+      <FlatList
+        data={images}
+        keyExtractor={(item) => item.id}
+        numColumns={numColumns}
+        renderItem={renderImage}
+        contentContainerStyle={[styles.listContainer, contentContainerStyle]}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 });
 
@@ -41,11 +42,15 @@ ImageGrid.displayName = "ImageGrid";
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 5,
+    flex: 1,
+  },
+  listContainer: {
+    padding: 10,
   },
   image: {
-    width: itemSize,
-    height: itemSize,
+    width: 150,
+    height: 150,
     margin: 5,
+    borderRadius: 8,
   },
 });

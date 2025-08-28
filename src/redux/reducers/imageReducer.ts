@@ -8,28 +8,40 @@ import { Image } from "../../domain/entities/Image";
 import { PicsumImage } from "../../domain/entities/PicsumImage";
 import { ImageService } from "../../services/imageService";
 
+// Tipos para status de carregamento
+type LoadingStatus = "idle" | "pending" | "succeeded" | "failed";
+
 interface ImageState {
   // Estado das imagens salvas
   savedImages: Image[];
-  
+
   // Estado da galeria
   galleryImages: Image[];
   galleryPage: number;
   galleryHasMore: boolean;
-  
-  // Estados de loading mais descritivos
-  loading: 'idle' | 'pending' | 'succeeded' | 'failed';
-  galleryLoading: 'idle' | 'pending' | 'succeeded' | 'failed';
-  savingImage: boolean;
-  deletingImage: boolean;
-  clearingAllImages: boolean;
-  fetchingRandomImage: boolean;
-  fetchingAndSaving: boolean;
-  
-  // Estados de erro
-  error: string | null;
-  galleryError: string | null;
-  
+
+  // Estados de carregamento granulares
+  status: {
+    gallery: LoadingStatus;
+    saved: LoadingStatus;
+    random: LoadingStatus;
+    save: LoadingStatus;
+    delete: LoadingStatus;
+    clearAll: LoadingStatus;
+    fetchAndSave: LoadingStatus;
+  };
+
+  // Estados de erro granulares
+  errors: {
+    gallery: string | null;
+    saved: string | null;
+    random: string | null;
+    save: string | null;
+    delete: string | null;
+    clearAll: string | null;
+    fetchAndSave: string | null;
+  };
+
   // Imagem aleatória atual
   randomImage: Image | null;
 }
@@ -39,15 +51,24 @@ const initialState: ImageState = {
   galleryImages: [],
   galleryPage: 1,
   galleryHasMore: true,
-  loading: 'idle',
-  galleryLoading: 'idle',
-  savingImage: false,
-  deletingImage: false,
-  clearingAllImages: false,
-  fetchingRandomImage: false,
-  fetchingAndSaving: false,
-  error: null,
-  galleryError: null,
+  status: {
+    gallery: "idle",
+    saved: "idle",
+    random: "idle",
+    save: "idle",
+    delete: "idle",
+    clearAll: "idle",
+    fetchAndSave: "idle",
+  },
+  errors: {
+    gallery: null,
+    saved: null,
+    random: null,
+    save: null,
+    delete: null,
+    clearAll: null,
+    fetchAndSave: null,
+  },
   randomImage: null,
 };
 
@@ -111,13 +132,16 @@ export const fetchAndSaveRandomImage = createAsyncThunk(
   }
 );
 
-// Thunk para buscar imagens da galeria (paginação)
+// Thunk para buscar imagens da galeria (paginação centralizada)
 export const fetchGalleryImages = createAsyncThunk(
   "images/fetchGalleryImages",
-  async (page: number = 1) => {
+  async (_, { getState, extra }) => {
+    const state = getState() as { images: ImageState };
+    const currentPage = state.images.galleryPage;
+
     const httpClient = new AxiosClient("https://picsum.photos");
     const response = await httpClient.get<PicsumImage[]>(
-      `/v2/list?page=${page}&limit=10`
+      `/v2/list?page=${currentPage}&limit=10`
     );
 
     return {
@@ -129,7 +153,6 @@ export const fetchGalleryImages = createAsyncThunk(
         height: picsumImage.height,
         isSaved: false,
       })),
-      page,
       hasMore: response.length === 10,
     };
   }
@@ -150,145 +173,173 @@ const imageSlice = createSlice({
   name: "images",
   initialState,
   reducers: {
-    clearError(state) {
-      state.error = null;
+    // Actions para limpar erros específicos
+    clearError: (state, action) => {
+      const errorType = action.payload as keyof typeof state.errors;
+      if (errorType && state.errors[errorType]) {
+        state.errors[errorType] = null;
+      }
     },
-    clearGalleryError(state) {
-      state.galleryError = null;
+
+    // Action para limpar todos os erros
+    clearAllErrors: (state) => {
+      Object.keys(state.errors).forEach((key) => {
+        state.errors[key as keyof typeof state.errors] = null;
+      });
     },
-    resetGalleryState(state) {
+
+    // Action para resetar estado da galeria
+    resetGalleryState: (state) => {
       state.galleryImages = [];
       state.galleryPage = 1;
       state.galleryHasMore = true;
-      state.galleryLoading = 'idle';
-      state.galleryError = null;
+      state.status.gallery = "idle";
+      state.errors.gallery = null;
+    },
+
+    // Action para resetar estado de uma operação específica
+    resetOperationStatus: (state, action) => {
+      const operation = action.payload as keyof typeof state.status;
+      if (operation && state.status[operation]) {
+        state.status[operation] = "idle";
+        state.errors[operation] = null;
+      }
     },
   },
   extraReducers: (builder) => {
     // Load Saved Images
     builder
       .addCase(loadSavedImages.pending, (state) => {
-        state.loading = 'pending';
-        state.error = null;
+        state.status.saved = "pending";
+        state.errors.saved = null;
       })
       .addCase(loadSavedImages.fulfilled, (state, action) => {
-        state.loading = 'succeeded';
+        state.status.saved = "succeeded";
         state.savedImages = action.payload;
       })
       .addCase(loadSavedImages.rejected, (state, action) => {
-        state.loading = 'failed';
-        state.error = action.error.message || "Erro ao carregar imagens";
+        state.status.saved = "failed";
+        state.errors.saved = action.error.message || "Erro ao carregar imagens";
       });
 
     // Save Image
     builder
       .addCase(saveImage.pending, (state) => {
-        state.savingImage = true;
-        state.error = null;
+        state.status.save = "pending";
+        state.errors.save = null;
       })
       .addCase(saveImage.fulfilled, (state, action) => {
-        state.savingImage = false;
+        state.status.save = "succeeded";
         state.savedImages.push(action.payload);
       })
       .addCase(saveImage.rejected, (state, action) => {
-        state.savingImage = false;
-        state.error = action.error.message || "Erro ao salvar imagem";
+        state.status.save = "failed";
+        state.errors.save = action.error.message || "Erro ao salvar imagem";
       });
 
     // Delete Image
     builder
       .addCase(deleteImage.pending, (state) => {
-        state.deletingImage = true;
-        state.error = null;
+        state.status.delete = "pending";
+        state.errors.delete = null;
       })
       .addCase(deleteImage.fulfilled, (state, action) => {
-        state.deletingImage = false;
+        state.status.delete = "succeeded";
         state.savedImages = state.savedImages.filter(
           (img) => img.id !== action.payload
         );
       })
       .addCase(deleteImage.rejected, (state, action) => {
-        state.deletingImage = false;
-        state.error = action.error.message || "Erro ao deletar imagem";
+        state.status.delete = "failed";
+        state.errors.delete = action.error.message || "Erro ao deletar imagem";
       });
 
     // Fetch Random Image
     builder
       .addCase(fetchRandomImage.pending, (state) => {
-        state.fetchingRandomImage = true;
-        state.error = null;
+        state.status.random = "pending";
+        state.errors.random = null;
       })
       .addCase(fetchRandomImage.fulfilled, (state, action) => {
-        state.fetchingRandomImage = false;
+        state.status.random = "succeeded";
         state.randomImage = action.payload;
       })
       .addCase(fetchRandomImage.rejected, (state, action) => {
-        state.fetchingRandomImage = false;
-        state.error = action.error.message || "Erro ao buscar imagem";
+        state.status.random = "failed";
+        state.errors.random = action.error.message || "Erro ao buscar imagem";
       });
 
     // Fetch and Save Random Image
     builder
       .addCase(fetchAndSaveRandomImage.pending, (state) => {
-        state.fetchingAndSaving = true;
-        state.error = null;
+        state.status.fetchAndSave = "pending";
+        state.errors.fetchAndSave = null;
       })
       .addCase(fetchAndSaveRandomImage.fulfilled, (state, action) => {
-        state.fetchingAndSaving = false;
+        state.status.fetchAndSave = "succeeded";
         state.randomImage = action.payload;
         state.savedImages.push(action.payload);
       })
       .addCase(fetchAndSaveRandomImage.rejected, (state, action) => {
-        state.fetchingAndSaving = false;
-        state.error = action.error.message || "Erro ao buscar e salvar imagem";
+        state.status.fetchAndSave = "failed";
+        state.errors.fetchAndSave =
+          action.error.message || "Erro ao buscar e salvar imagem";
       });
 
     // Fetch Gallery Images
     builder
-      .addCase(fetchGalleryImages.pending, (state, action) => {
-        state.galleryLoading = 'pending';
-        state.galleryError = null;
-        // Se for a primeira página, limpa as imagens existentes
-        if (action.meta.arg === 1) {
-          state.galleryImages = [];
-        }
+      .addCase(fetchGalleryImages.pending, (state) => {
+        state.status.gallery = "pending";
+        state.errors.gallery = null;
       })
       .addCase(fetchGalleryImages.fulfilled, (state, action) => {
-        state.galleryLoading = 'succeeded';
-        const { images, page, hasMore } = action.payload;
-        
-        if (page === 1) {
-          // Primeira página: substitui todas as imagens
+        state.status.gallery = "succeeded";
+        const { images, hasMore } = action.payload;
+
+        // Se for a primeira página, substitui todas as imagens
+        if (state.galleryPage === 1) {
           state.galleryImages = images;
         } else {
           // Páginas subsequentes: concatena com as existentes
-          state.galleryImages.push(...images);
+          // Filtra imagens duplicadas baseado no ID
+          const existingIds = new Set(state.galleryImages.map((img) => img.id));
+          const newImages = images.filter((img) => !existingIds.has(img.id));
+          state.galleryImages.push(...newImages);
         }
-        
-        state.galleryPage = page;
+
+        // Incrementa a página para a próxima busca
+        state.galleryPage += 1;
         state.galleryHasMore = hasMore;
       })
       .addCase(fetchGalleryImages.rejected, (state, action) => {
-        state.galleryLoading = 'failed';
-        state.galleryError = action.error.message || "Erro ao carregar galeria";
+        state.status.gallery = "failed";
+        state.errors.gallery =
+          action.error.message || "Erro ao carregar galeria";
       });
 
     // Clear All Images
     builder
       .addCase(clearAllImages.pending, (state) => {
-        state.clearingAllImages = true;
-        state.error = null;
+        state.status.clearAll = "pending";
+        state.errors.clearAll = null;
       })
       .addCase(clearAllImages.fulfilled, (state) => {
-        state.clearingAllImages = false;
+        state.status.clearAll = "succeeded";
         state.savedImages = [];
       })
       .addCase(clearAllImages.rejected, (state, action) => {
-        state.clearingAllImages = false;
-        state.error = action.error.message || "Erro ao limpar imagens";
+        state.status.clearAll = "failed";
+        state.errors.clearAll =
+          action.error.message || "Erro ao limpar imagens";
       });
   },
 });
 
-export const { clearError, clearGalleryError, resetGalleryState } = imageSlice.actions;
+export const {
+  clearError,
+  clearAllErrors,
+  resetGalleryState,
+  resetOperationStatus,
+} = imageSlice.actions;
+
 export default imageSlice.reducer;

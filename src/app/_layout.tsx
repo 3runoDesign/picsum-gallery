@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "react-native";
 import { Provider } from "react-redux";
 import { DependencyProvider } from "../core/dependenciesContext";
+import { ErrorObserver } from "../presentation/components/ErrorObserver";
 import { store } from "../redux/store";
 
 export default function RootLayout() {
@@ -9,6 +10,7 @@ export default function RootLayout() {
     <Provider store={store}>
       <StatusBar barStyle={"dark-content"} />
       <DependencyProvider>
+        <ErrorObserver />
         <Stack>
           <Stack.Screen name="index" options={{ title: "Início" }} />
           <Stack.Screen name="gallery/index" options={{ title: "Galeria" }} />

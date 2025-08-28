@@ -4,7 +4,6 @@ import { useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -16,7 +15,6 @@ export default function SavedImagesScreen() {
   const {
     savedImages,
     loadingSavedImages,
-    savedImagesError,
     deleteImage,
     deletingImage,
     clearAllImages,
@@ -26,26 +24,8 @@ export default function SavedImagesScreen() {
   const navigation = useNavigation();
 
   const handleClearAllImages = useCallback(() => {
-    Alert.alert(
-      "Confirmar Limpeza",
-      `Deseja realmente remover TODAS as ${savedImages.length} imagens salvas? Esta ação não pode ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Limpar Tudo",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await clearAllImages();
-              Alert.alert("Sucesso", "Todas as imagens foram removidas!");
-            } catch {
-              Alert.alert("Erro", "Falha ao limpar imagens");
-            }
-          },
-        },
-      ]
-    );
-  }, [savedImages.length, clearAllImages]);
+    clearAllImages();
+  }, [clearAllImages]);
 
   // Configura o header da navegação com o botão "Limpar Tudo"
   useEffect(() => {
@@ -93,31 +73,12 @@ export default function SavedImagesScreen() {
   };
 
   const handleDeleteImage = async (image: Image) => {
-    Alert.alert(
-      "Confirmar Exclusão",
-      `Deseja realmente excluir a imagem de ${image.author}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteImage(image.id);
-              Alert.alert("Sucesso", "Imagem excluída com sucesso!");
-            } catch {
-              Alert.alert("Erro", "Falha ao excluir imagem");
-            }
-          },
-        },
-      ]
-    );
+    try {
+      await deleteImage(image.id);
+    } catch {
+      // Erro tratado pelo ErrorObserver global
+    }
   };
-
-  // Mostra alerta de erro se houver
-  if (savedImagesError) {
-    Alert.alert("Erro", `Erro ao carregar imagens: ${savedImagesError}`);
-  }
 
   if (loadingSavedImages) {
     return (

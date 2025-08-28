@@ -1,36 +1,36 @@
-import { Image, ImageProps } from "expo-image";
-import React, { memo, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import React, { memo } from "react";
+import { Image, ImageProps, Pressable, StyleSheet } from "react-native";
 
-export const CustomImage = memo((props: ImageProps) => {
-  const [isLoading, setIsLoading] = useState(true);
+interface CustomImageProps extends Omit<ImageProps, "source"> {
+  source: { uri: string };
+  style?: any;
+  onPress?: () => void;
+}
 
-  return (
-    <View style={styles.container}>
+export const CustomImage = memo<CustomImageProps>(
+  ({ source, style, onPress, ...props }) => {
+    const imageComponent = (
       <Image
+        source={source}
+        style={[styles.image, style]}
+        resizeMode="cover"
         {...props}
-        onLoad={() => setIsLoading(false)}
-        style={[props.style, { opacity: isLoading ? 0 : 1 }]}
-        contentFit="cover"
-        transition={200}
       />
-      {isLoading && (
-        <View style={styles.loader}>
-          <ActivityIndicator />
-        </View>
-      )}
-    </View>
-  );
-});
+    );
+
+    if (onPress) {
+      return <Pressable onPress={onPress}>{imageComponent}</Pressable>;
+    }
+
+    return imageComponent;
+  }
+);
 
 CustomImage.displayName = "CustomImage";
 
 const styles = StyleSheet.create({
-  container: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loader: {
-    position: "absolute",
+  image: {
+    width: "100%",
+    height: "100%",
   },
 });

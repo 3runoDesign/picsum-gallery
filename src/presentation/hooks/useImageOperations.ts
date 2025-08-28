@@ -10,7 +10,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../redux/store";
 import {
   clearError,
-  clearGalleryError,
   deleteImage,
   fetchAndSaveRandomImage,
   fetchRandomImage,
@@ -27,20 +26,16 @@ export const useImageOperations = () => {
   const {
     savedImages,
     randomImage,
-    loading,
-    savingImage,
-    deletingImage,
-    clearingAllImages,
-    fetchingRandomImage,
-    fetchingAndSaving,
-    error,
-    galleryError,
+    status,
+    errors,
   } = useSelector((state: RootState) => state.images);
 
   // Carrega imagens salvas quando o hook é montado
   useEffect(() => {
-    dispatch(loadSavedImages());
-  }, [dispatch]);
+    if (status.saved === 'idle') {
+      dispatch(loadSavedImages());
+    }
+  }, [dispatch, status.saved]);
 
   // Função para recarregar imagens salvas
   const refreshSavedImages = useCallback(() => {
@@ -100,13 +95,9 @@ export const useImageOperations = () => {
     }
   }, [dispatch]);
 
-  // Função para limpar erros
-  const clearErrorHandler = useCallback(() => {
-    dispatch(clearError());
-  }, [dispatch]);
-
-  const clearGalleryErrorHandler = useCallback(() => {
-    dispatch(clearGalleryError());
+  // Função para limpar erros específicos
+  const clearErrorHandler = useCallback((errorType: keyof typeof errors) => {
+    dispatch(clearError(errorType));
   }, [dispatch]);
 
   // Função para resetar estado da galeria
@@ -119,21 +110,21 @@ export const useImageOperations = () => {
     savedImages: savedImages || [],
     randomImage,
 
-    // Estados de loading
-    loadingSavedImages: loading === 'pending',
-    loadingRandomImage: fetchingRandomImage,
-    savingImage,
-    deletingImage,
-    clearingAllImages,
-    fetchingAndSaving,
+    // Estados de loading granulares
+    loadingSavedImages: status.saved === 'pending',
+    loadingRandomImage: status.random === 'pending',
+    savingImage: status.save === 'pending',
+    deletingImage: status.delete === 'pending',
+    clearingAllImages: status.clearAll === 'pending',
+    fetchingAndSaving: status.fetchAndSave === 'pending',
 
-    // Estados de erro
-    savedImagesError: error,
-    randomImageError: error,
-    saveImageError: error,
-    deleteImageError: error,
-    fetchAndSaveError: error,
-    galleryError,
+    // Estados de erro granulares
+    savedImagesError: errors.saved,
+    randomImageError: errors.random,
+    saveImageError: errors.save,
+    deleteImageError: errors.delete,
+    fetchAndSaveError: errors.fetchAndSave,
+    galleryError: errors.gallery,
 
     // Ações
     refreshSavedImages,
@@ -143,7 +134,6 @@ export const useImageOperations = () => {
     clearAllImages: clearAllImagesHandler,
     fetchAndSaveRandomImage: fetchAndSaveRandomImageHandler,
     clearError: clearErrorHandler,
-    clearGalleryError: clearGalleryErrorHandler,
     resetGalleryState: resetGalleryStateHandler,
   };
 };

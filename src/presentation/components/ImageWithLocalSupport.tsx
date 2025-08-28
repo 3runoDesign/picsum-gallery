@@ -1,87 +1,80 @@
-import { Image, ImageProps } from "expo-image";
 import React, { memo, useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { Image as ImageEntity } from "../../domain/entities/Image";
+import { Image, ImageProps, StyleSheet, View, ActivityIndicator } from "react-native";
 
-interface ImageWithLocalSupportProps extends Omit<ImageProps, "source"> {
-  image: ImageEntity;
+interface ImageWithLocalSupportProps extends Omit<ImageProps, 'source'> {
+  image: {
+    id: string;
+    url: string;
+    author: string;
+    width: number;
+    height: number;
+  };
   style?: any;
+  onLoadStart?: () => void;
+  onLoad?: () => void;
+  onLoadEnd?: () => void;
 }
 
-export const ImageWithLocalSupport: React.FC<ImageWithLocalSupportProps> = memo(
-  ({ image, style, ...props }) => {
-    const [isLoading, setIsLoading] = useState(true);
-    const [hasError, setHasError] = useState(false);
+export const ImageWithLocalSupport = memo<ImageWithLocalSupportProps>(({
+  image,
+  style,
+  onLoadStart,
+  onLoad,
+  onLoadEnd,
+  ...props
+}) => {
+  const [isLoading, setIsLoading] = useState(true);
 
-    // Prioriza o caminho local se disponível, senão usa a URL original
-    const imageSource = image.localPath
-      ? { uri: image.localPath }
-      : { uri: image.url };
+  const handleLoadStart = () => {
+    setIsLoading(true);
+    onLoadStart?.();
+  };
 
-    const handleLoad = () => {
-      setIsLoading(false);
-      setHasError(false);
-    };
+  const handleLoad = () => {
+    setIsLoading(false);
+    onLoad?.();
+  };
 
-    const handleError = () => {
-      setIsLoading(false);
-      setHasError(true);
-      console.warn(
-        `Erro ao carregar imagem ${image.id} do caminho: ${imageSource.uri}`
-      );
-    };
+  const handleLoadEnd = () => {
+    setIsLoading(false);
+    onLoadEnd?.();
+  };
 
-    // Se houve erro e temos um caminho local, tenta carregar da URL original
-    const fallbackSource =
-      hasError && image.localPath ? { uri: image.url } : imageSource;
-
-    return (
-      <View style={styles.container}>
-        <Image
-          {...props}
-          source={fallbackSource}
-          onLoad={handleLoad}
-          onError={handleError}
-          style={[style, { opacity: isLoading ? 0 : 1 }]}
-          contentFit="cover"
-          transition={200}
-        />
-        {hasError && !image.localPath && (
-          <View style={styles.errorContainer}>
-            <Image
-              source={{ uri: image.url }}
-              style={[style, { opacity: 0.5 }]}
-              onLoad={() => {
-                setIsLoading(false);
-                setHasError(false);
-              }}
-              contentFit="cover"
-              transition={200}
-            />
-          </View>
-        )}
-      </View>
-    );
-  }
-);
+  return (
+    <View style={[styles.container, style]}>
+      <Image
+        source={{ uri: image.url }}
+        style={[styles.image, style]}
+        resizeMode="cover"
+        onLoadStart={handleLoadStart}
+        onLoad={handleLoad}
+        onLoadEnd={handleLoadEnd}
+        {...props}
+      />
+      {isLoading && (
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      )}
+    </View>
+  );
+});
 
 ImageWithLocalSupport.displayName = "ImageWithLocalSupport";
 
 const styles = StyleSheet.create({
   container: {
+    position: "relative",
     justifyContent: "center",
     alignItems: "center",
-    position: "relative",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
   },
   loader: {
     position: "absolute",
-    zIndex: 1,
-  },
-  errorContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Button,
   Pressable,
   StyleSheet,
@@ -20,10 +19,6 @@ export default function HomeScreen() {
     loadingRandomImage,
     savingImage,
     fetchingAndSaving,
-    savedImagesError,
-    randomImageError,
-    saveImageError,
-    fetchAndSaveError,
     refreshRandomImage,
     saveImage,
     fetchAndSaveRandomImage,
@@ -87,20 +82,6 @@ export default function HomeScreen() {
   const handleImageLoadStart = () => {
     setImageLoading(true);
   };
-
-  // Mostra alertas de erro
-  if (savedImagesError) {
-    Alert.alert("Erro", `Erro ao carregar imagens: ${savedImagesError}`);
-  }
-  if (randomImageError) {
-    Alert.alert("Erro", `Erro ao carregar imagem: ${randomImageError}`);
-  }
-  if (saveImageError) {
-    Alert.alert("Erro", `Erro ao salvar imagem: ${saveImageError}`);
-  }
-  if (fetchAndSaveError) {
-    Alert.alert("Erro", `Erro ao buscar e salvar imagem: ${fetchAndSaveError}`);
-  }
 
   return (
     <View style={styles.container}>

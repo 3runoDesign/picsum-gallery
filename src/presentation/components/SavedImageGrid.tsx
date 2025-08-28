@@ -8,12 +8,12 @@ import {
   View,
 } from "react-native";
 import { Image } from "../../domain/entities/Image";
-import { ImageWithLocalSupport } from "./ImageWithLocalSupport";
+import { CustomImage } from "./CustomImage";
 
 interface SavedImageGridProps {
   images: Image[];
-  onImagePress: (image: Image) => void;
-  onDeleteImage: (image: Image) => void;
+  onImagePress?: (image: Image) => void;
+  onDeleteImage?: (image: Image) => void;
   isDeleting?: boolean;
 }
 
@@ -21,51 +21,55 @@ const numColumns = 2;
 const { width } = Dimensions.get("window");
 const itemSize = (width - 30) / numColumns; // 15 de padding horizontal
 
-export const SavedImageGrid = memo(
-  ({
-    images,
-    onImagePress,
-    onDeleteImage,
-    isDeleting = false,
-  }: SavedImageGridProps) => {
-    const renderImage = ({ item }: { item: Image }) => (
-      <View style={styles.imageContainer}>
-        <Pressable onPress={() => onImagePress(item)}>
-          <ImageWithLocalSupport image={item} style={styles.image} />
-          <View style={styles.imageOverlay}>
-            <Text style={styles.authorText}>{item.author}</Text>
-          </View>
-        </Pressable>
-
+export const SavedImageGrid = memo<SavedImageGridProps>(({
+  images,
+  onImagePress,
+  onDeleteImage,
+  isDeleting = false,
+}) => {
+  const renderImage = ({ item }: { item: Image }) => (
+    <View style={styles.imageContainer}>
+      <Pressable onPress={() => onImagePress?.(item)}>
+        <CustomImage source={{ uri: item.url }} style={styles.image} />
+      </Pressable>
+      
+      {onDeleteImage && (
         <Pressable
-          style={styles.deleteButton}
+          style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
           onPress={() => onDeleteImage(item)}
           disabled={isDeleting}
         >
           <Text style={styles.deleteButtonText}>
-            {isDeleting ? "..." : "🗑️"}
+            {isDeleting ? "Excluindo..." : "Excluir"}
           </Text>
         </Pressable>
+      )}
+      
+      <View style={styles.imageOverlay}>
+        <Text style={styles.authorText}>{item.author}</Text>
+        <Text style={styles.dimensionsText}>
+          {item.width} x {item.height}
+        </Text>
       </View>
-    );
+    </View>
+  );
 
-    return (
-      <FlatList
-        data={images}
-        keyExtractor={(item) => item.id}
-        numColumns={numColumns}
-        contentContainerStyle={styles.container}
-        renderItem={renderImage}
-        showsVerticalScrollIndicator={false}
-      />
-    );
-  }
-);
+  return (
+    <FlatList
+      data={images}
+      keyExtractor={(item) => item.id}
+      numColumns={numColumns}
+      contentContainerStyle={styles.listContainer}
+      renderItem={renderImage}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+});
 
 SavedImageGrid.displayName = "SavedImageGrid";
 
 const styles = StyleSheet.create({
-  container: {
+  listContainer: {
     padding: 10,
   },
   imageContainer: {
@@ -80,7 +84,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    position: "relative",
   },
   image: {
     width: "100%",
@@ -98,19 +101,29 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
+    marginBottom: 2,
+  },
+  dimensionsText: {
+    color: "#fff",
+    fontSize: 10,
+    opacity: 0.8,
   },
   deleteButton: {
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: "rgba(255, 0, 0, 0.8)",
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: "#ccc",
+    opacity: 0.7,
   },
   deleteButtonText: {
-    fontSize: 14,
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "600",
   },
 });

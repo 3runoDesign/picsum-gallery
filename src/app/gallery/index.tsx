@@ -2,7 +2,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   Pressable,
@@ -60,10 +59,11 @@ export default function GalleryScreen() {
     }
   }, [savedImages, localSavedImages]);
 
-  // Refaz o processo quando o usuário volta para a galeria
+  // Refaz apenas as imagens salvas quando o usuário volta para a galeria
   useFocusEffect(
     useCallback(() => {
-      // Atualiza as imagens salvas da API para garantir sincronização
+      // Atualiza apenas as imagens salvas da API para garantir sincronização
+      // NÃO recarrega a lista principal da galeria
       refreshSavedImages();
     }, [refreshSavedImages])
   );
@@ -97,10 +97,8 @@ export default function GalleryScreen() {
 
       // Atualiza o estado local imediatamente para destacar a imagem
       setLocalSavedImages((prev) => new Set(prev).add(image.id));
-
-      // Alert.alert("Sucesso", "Imagem salva com sucesso!");
     } catch {
-      Alert.alert("Erro", "Falha ao salvar imagem");
+      // Erro tratado pelo ErrorObserver global
     } finally {
       // Remove a imagem do conjunto de imagens sendo salvas
       setSavingImages((prev) => {
