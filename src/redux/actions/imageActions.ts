@@ -4,7 +4,7 @@ import { ImageStorageRepository } from "../../domain/repositories/imageStorageRe
 
 export const loadImages =
   (repository: ImageStorageRepository) => async (dispatch: Dispatch) => {
-    const images = await repository.getAllImages();
+    const images = await repository.getSavedImages();
     dispatch({ type: "SET_IMAGES", payload: images });
   };
 
@@ -12,7 +12,7 @@ export const saveImage =
   (repository: ImageStorageRepository, image: Image) =>
   async (dispatch: Dispatch) => {
     await repository.saveImage(image);
-    const images = await repository.getAllImages();
+    const images = await repository.getSavedImages();
     dispatch({ type: "SET_IMAGES", payload: images });
   };
 
@@ -20,6 +20,6 @@ export const deleteImage =
   (repository: ImageStorageRepository, id: string) =>
   async (dispatch: Dispatch) => {
     await repository.deleteImage(id);
-    const images = await repository.getAllImages();
+    const images = await repository.getSavedImages();
     dispatch({ type: "SET_IMAGES", payload: images });
   };

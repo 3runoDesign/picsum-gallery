@@ -14,10 +14,8 @@ export class AxiosClient implements HttpClient {
   }
 
   async get<T>(path: string, params?: Record<string, any>): Promise<T> {
-    console.log(`Fazendo requisição GET para: ${path}`, params);
     try {
       const response = await this.client.get<T>(path, { params });
-      console.log("Resposta recebida:", response.data);
       return response.data;
     } catch (error) {
       console.error("Erro na requisição:", error);

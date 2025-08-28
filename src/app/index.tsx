@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -27,6 +27,7 @@ export default function HomeScreen() {
     refreshRandomImage,
     saveImage,
     fetchAndSaveRandomImage,
+    refreshSavedImages,
   } = useImageOperations();
 
   const { addImage, goToPrevious, getCurrentImage, canGoBack } =
@@ -35,6 +36,13 @@ export default function HomeScreen() {
 
   // Estado para controlar o carregamento da imagem
   const [imageLoading, setImageLoading] = useState(false);
+
+  // Função para verificar se a imagem atual está salva
+  const isCurrentImageSaved = useCallback(() => {
+    const current = getCurrentImage();
+    if (!current) return false;
+    return savedImages.some((img) => img.id === current.id);
+  }, [savedImages, getCurrentImage]);
 
   // Adiciona a imagem aleatória ao histórico quando ela carrega
   useEffect(() => {
@@ -45,10 +53,16 @@ export default function HomeScreen() {
     }
   }, [randomImage, addImage]);
 
+  // Atualiza as imagens salvas quando a tela é focada
+  useEffect(() => {
+    refreshSavedImages();
+  }, [refreshSavedImages]);
+
   const currentImage = getCurrentImage();
+  const currentImageIsSaved = isCurrentImageSaved();
 
   const handleSaveCurrentImage = () => {
-    if (currentImage) {
+    if (currentImage && !currentImageIsSaved) {
       saveImage(currentImage);
     }
   };
@@ -115,6 +129,12 @@ export default function HomeScreen() {
                 </Text>
               </View>
             )}
+            {/* Indicador de imagem salva */}
+            {currentImageIsSaved && (
+              <View style={styles.savedIndicator}>
+                <Text style={styles.savedText}>✓ Salva</Text>
+              </View>
+            )}
           </View>
         ) : (
           <Text style={styles.noImageText}>Nenhuma imagem carregada</Text>
@@ -137,7 +157,7 @@ export default function HomeScreen() {
         <Button
           title="Salvar Imagem Atual"
           onPress={handleSaveCurrentImage}
-          disabled={!currentImage || savingImage}
+          disabled={!currentImage || savingImage || currentImageIsSaved}
         />
 
         <Button
@@ -263,5 +283,20 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  savedIndicator: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "#4CAF50",
+    opacity: 0.8,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  savedText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
 });

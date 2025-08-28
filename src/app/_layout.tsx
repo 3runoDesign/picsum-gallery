@@ -1,5 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import { StatusBar } from "react-native";
 import { Provider } from "react-redux";
 import { DependencyProvider } from "../core/dependenciesContext";
 import { queryClient } from "../core/queryClient";
@@ -9,6 +10,7 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
+        <StatusBar barStyle={"dark-content"} />
         <DependencyProvider>
           <Stack>
             <Stack.Screen name="index" options={{ title: "Início" }} />

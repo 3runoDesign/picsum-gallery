@@ -9,10 +9,10 @@ import { SaveImageUseCase } from "../data/usecases/saveImage";
 
 // --- Crie as instâncias uma única vez ---
 const imageStorage = new AsyncStorageImageStorage();
-const saveUseCase = new SaveImageUseCase(imageStorage);
-const listUseCase = new ListSavedImagesUseCase(imageStorage);
-const deleteUseCase = new DeleteImageUseCase(imageStorage);
-const clearAllUseCase = new ClearAllImagesUseCase(imageStorage);
+export const saveUseCase = new SaveImageUseCase(imageStorage);
+export const listUseCase = new ListSavedImagesUseCase(imageStorage);
+export const deleteUseCase = new DeleteImageUseCase(imageStorage);
+export const clearAllUseCase = new ClearAllImagesUseCase(imageStorage);
 
 interface AppDependencies {
   saveUseCase: SaveImageUseCase;

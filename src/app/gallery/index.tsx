@@ -30,12 +30,14 @@ export default function GalleryScreen() {
     isFetchingNextPage,
     refetch,
   } = useImageList();
-  const { saveImage } = useImageOperations();
+
+  const { saveImage, savedImages, loadingSavedImages, refreshSavedImages } =
+    useImageOperations();
 
   // Estado local para controlar imagens sendo salvas
   const [savingImages, setSavingImages] = useState<Set<string>>(new Set());
 
-  // Estado local para imagens salvas (sincronizado com dados do servidor)
+  // Estado local para imagens salvas (otimizado para performance)
   const [localSavedImages, setLocalSavedImages] = useState<Set<string>>(
     new Set()
   );
@@ -43,39 +45,31 @@ export default function GalleryScreen() {
   // Flatten all pages into a single array
   const allImages = useMemo(() => data?.pages.flat() || [], [data?.pages]);
 
-  // Sincroniza imagens salvas quando os dados chegam ou quando savedImages muda
+  // Sincroniza imagens salvas da API com estado local de forma otimizada
   useEffect(() => {
-    if (allImages.length > 0) {
-      // Combina dados da API com estado local para garantir sincronização
-      const apiSavedIds = new Set(
-        allImages.filter((img) => img.isSaved).map((img) => img.id)
-      );
+    if (savedImages.length > 0) {
+      const apiSavedIds = new Set(savedImages.map((img) => img.id));
 
-      // Cria um novo Set combinando API + estado local
-      const combinedSavedIds = new Set([...localSavedImages, ...apiSavedIds]);
-
-      // Só atualiza se houver mudanças
+      // Só atualiza se houver mudanças reais para evitar re-renders desnecessários
       if (
-        combinedSavedIds.size !== localSavedImages.size ||
-        [...combinedSavedIds].some((id) => !localSavedImages.has(id))
+        apiSavedIds.size !== localSavedImages.size ||
+        [...apiSavedIds].some((id) => !localSavedImages.has(id))
       ) {
-        setLocalSavedImages(combinedSavedIds);
+        setLocalSavedImages(apiSavedIds);
       }
     }
-  }, [allImages, localSavedImages]);
+  }, [savedImages, localSavedImages]);
 
   // Refaz o processo quando o usuário volta para a galeria
   useFocusEffect(
     useCallback(() => {
-      // Reseta o estado local para forçar nova sincronização
-      setLocalSavedImages(new Set());
-
-      // Força refetch dos dados para sincronizar com o estado atual do servidor
-      refetch();
-    }, [refetch])
+      // Atualiza as imagens salvas da API para garantir sincronização
+      refreshSavedImages();
+    }, [refreshSavedImages])
   );
 
   const handleImagePress = (image: Image) => {
+    const isSaved = isImageSaved(image.id);
     router.push({
       pathname: "/images/[url]" as any,
       params: {
@@ -84,6 +78,7 @@ export default function GalleryScreen() {
         author: image.author,
         width: image.width.toString(),
         height: image.height.toString(),
+        isSaved: isSaved.toString(),
       },
     });
   };
@@ -122,9 +117,17 @@ export default function GalleryScreen() {
     }
   };
 
+  // Função otimizada para determinar se uma imagem está salva
+  const isImageSaved = useCallback(
+    (imageId: string) => {
+      return localSavedImages.has(imageId);
+    },
+    [localSavedImages]
+  );
+
   const renderImage = ({ item }: { item: Image }) => {
     const isThisImageSaving = savingImages.has(item.id);
-    const isSaved = item.isSaved || localSavedImages.has(item.id);
+    const isSaved = isImageSaved(item.id);
     const isButtonDisabled = isThisImageSaving || isSaved;
 
     return (
@@ -178,11 +181,16 @@ export default function GalleryScreen() {
     Alert.alert("Erro", `Erro ao carregar imagens: ${error.message || error}`);
   }
 
-  if (isLoading) {
+  // Mostra loading enquanto carrega imagens salvas ou galeria
+  if (isLoading || loadingSavedImages) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Carregando galeria...</Text>
+        <Text style={styles.loadingText}>
+          {loadingSavedImages
+            ? "Carregando imagens salvas..."
+            : "Carregando galeria..."}
+        </Text>
       </View>
     );
   }
@@ -256,10 +264,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   savedImageContainer: {
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: "#4CAF50",
-    elevation: 4,
-    shadowOpacity: 0.2,
+    elevation: 6,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    transform: [{ scale: 1.02 }],
   },
   image: {
     width: "100%",

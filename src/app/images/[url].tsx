@@ -1,9 +1,11 @@
 import { CustomImage } from "@/src/presentation/components/CustomImage";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -12,7 +14,14 @@ import { Image } from "../../domain/entities/Image";
 import { useImageOperations } from "../../presentation/hooks/useImageQueries";
 
 export default function ImageDetailScreen() {
-  const { url, id, author, width, height, isSaved } = useLocalSearchParams<{
+  const {
+    url,
+    id,
+    author,
+    width,
+    height,
+    isSaved: initialIsSaved,
+  } = useLocalSearchParams<{
     url: string;
     id: string;
     author: string;
@@ -20,9 +29,34 @@ export default function ImageDetailScreen() {
     height: string;
     isSaved?: string;
   }>();
+
   const router = useRouter();
-  const { saveImage, savingImage, deleteImage, deletingImage } =
-    useImageOperations();
+  const {
+    saveImage,
+    savingImage,
+    deleteImage,
+    deletingImage,
+    savedImages,
+    refreshSavedImages,
+  } = useImageOperations();
+
+  // Estado local para controlar se a imagem está salva
+  const [isImageSaved, setIsImageSaved] = useState<boolean>(
+    initialIsSaved === "true"
+  );
+
+  // Verifica em tempo real se a imagem está salva
+  useEffect(() => {
+    if (savedImages.length > 0 && id) {
+      const isCurrentlySaved = savedImages.some((img) => img.id === id);
+      setIsImageSaved(isCurrentlySaved);
+    }
+  }, [savedImages, id]);
+
+  // Atualiza as imagens salvas quando a tela é focada
+  useEffect(() => {
+    refreshSavedImages();
+  }, [refreshSavedImages]);
 
   // Construir URL do Picsum com altura fixa de 400px
   const getPicsumImageUrl = (
@@ -52,6 +86,7 @@ export default function ImageDetailScreen() {
 
     try {
       await saveImage(image);
+      setIsImageSaved(true);
       Alert.alert("Sucesso", "Imagem salva com sucesso!");
     } catch {
       Alert.alert("Erro", "Falha ao salvar imagem");
@@ -79,6 +114,7 @@ export default function ImageDetailScreen() {
           onPress: async () => {
             try {
               await deleteImage(id);
+              setIsImageSaved(false);
               Alert.alert("Sucesso", "Imagem excluída com sucesso!");
               router.back();
             } catch {
@@ -106,6 +142,7 @@ export default function ImageDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle={"light-content"} />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.image}>
           <CustomImage
@@ -119,8 +156,7 @@ export default function ImageDetailScreen() {
           <Text style={styles.metadataTitle}>Informações da Imagem</Text>
           <View style={styles.metadataRow}>
             <Text style={styles.metadataLabel}>Autor:</Text>
-            {/* <Text style={styles.metadataValue}>{author}</Text> */}
-            <Text style={styles.metadataValue}>{url}</Text>
+            <Text style={styles.metadataValue}>{author}</Text>
           </View>
           <View style={styles.metadataRow}>
             <Text style={styles.metadataLabel}>Dimensões:</Text>
@@ -131,6 +167,20 @@ export default function ImageDetailScreen() {
           <View style={styles.metadataRow}>
             <Text style={styles.metadataLabel}>ID:</Text>
             <Text style={styles.metadataValue}>{id}</Text>
+          </View>
+          <View style={styles.metadataRow}>
+            <Text style={styles.metadataLabel}>Status:</Text>
+            <Text
+              style={[
+                styles.metadataValue,
+                styles.statusText,
+                isImageSaved
+                  ? styles.savedStatusText
+                  : styles.notSavedStatusText,
+              ]}
+            >
+              {isImageSaved ? "✓ Salva" : "Não salva"}
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -143,7 +193,7 @@ export default function ImageDetailScreen() {
           <Text style={styles.backButtonText}>Voltar</Text>
         </Pressable>
 
-        {isSaved === "true" ? (
+        {isImageSaved ? (
           <Pressable
             style={[styles.button, styles.deleteButton]}
             onPress={handleDeleteImage}
@@ -264,5 +314,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
     marginBottom: 20,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  savedStatusText: {
+    color: "#4CAF50", // Green for saved
+  },
+  notSavedStatusText: {
+    color: "#FF9800", // Orange for not saved
   },
 });
