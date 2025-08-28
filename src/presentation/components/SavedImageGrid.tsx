@@ -30,7 +30,11 @@ export const SavedImageGrid = memo<SavedImageGridProps>(({
   const renderImage = ({ item }: { item: Image }) => (
     <View style={styles.imageContainer}>
       <Pressable onPress={() => onImagePress?.(item)}>
-        <CustomImage source={{ uri: item.url }} style={styles.image} />
+        <CustomImage 
+          source={{ uri: item.url }} 
+          style={styles.image}
+          // Mostra loading individual para cada imagem
+        />
       </Pressable>
       
       {onDeleteImage && (
@@ -62,6 +66,11 @@ export const SavedImageGrid = memo<SavedImageGridProps>(({
       contentContainerStyle={styles.listContainer}
       renderItem={renderImage}
       showsVerticalScrollIndicator={false}
+      // Melhora a performance da lista
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      windowSize={10}
+      initialNumToRender={10}
     />
   );
 });

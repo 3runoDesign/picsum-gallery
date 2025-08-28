@@ -83,7 +83,7 @@ export default function SavedImagesScreen() {
   if (loadingSavedImages) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="small" color="#007AFF" />
         <Text style={styles.loadingText}>Carregando imagens...</Text>
       </View>
     );

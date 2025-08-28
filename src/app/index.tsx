@@ -90,7 +90,7 @@ export default function HomeScreen() {
       <View style={styles.imageContainer}>
         {loadingRandomImage ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="small" color="#007AFF" />
             <Text style={styles.loadingText}>Carregando nova imagem...</Text>
           </View>
         ) : currentImage ? (
