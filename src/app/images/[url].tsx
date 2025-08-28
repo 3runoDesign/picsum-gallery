@@ -1,6 +1,6 @@
 import { CustomImage } from "@/src/presentation/components/CustomImage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Alert,
   Pressable,
@@ -14,20 +14,12 @@ import { Image } from "../../domain/entities/Image";
 import { useImageOperations } from "../../presentation/hooks/useImageQueries";
 
 export default function ImageDetailScreen() {
-  const {
-    url,
-    id,
-    author,
-    width,
-    height,
-    isSaved: initialIsSaved,
-  } = useLocalSearchParams<{
+  const { url, id, author, width, height } = useLocalSearchParams<{
     url: string;
     id: string;
     author: string;
     width: string;
     height: string;
-    isSaved?: string;
   }>();
 
   const router = useRouter();
@@ -40,18 +32,11 @@ export default function ImageDetailScreen() {
     refreshSavedImages,
   } = useImageOperations();
 
-  // Estado local para controlar se a imagem está salva
-  const [isImageSaved, setIsImageSaved] = useState<boolean>(
-    initialIsSaved === "true"
+  // Estado derivado calculado com useMemo para evitar recálculos desnecessários
+  const isImageSaved = useMemo(
+    () => savedImages.some((img) => img.id === id),
+    [savedImages, id]
   );
-
-  // Verifica em tempo real se a imagem está salva
-  useEffect(() => {
-    if (savedImages.length > 0 && id) {
-      const isCurrentlySaved = savedImages.some((img) => img.id === id);
-      setIsImageSaved(isCurrentlySaved);
-    }
-  }, [savedImages, id]);
 
   // Atualiza as imagens salvas quando a tela é focada
   useEffect(() => {
@@ -86,7 +71,6 @@ export default function ImageDetailScreen() {
 
     try {
       await saveImage(image);
-      setIsImageSaved(true);
       Alert.alert("Sucesso", "Imagem salva com sucesso!");
     } catch {
       Alert.alert("Erro", "Falha ao salvar imagem");
@@ -114,7 +98,6 @@ export default function ImageDetailScreen() {
           onPress: async () => {
             try {
               await deleteImage(id);
-              setIsImageSaved(false);
               Alert.alert("Sucesso", "Imagem excluída com sucesso!");
               router.back();
             } catch {

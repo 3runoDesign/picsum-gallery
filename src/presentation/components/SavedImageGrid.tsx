@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import {
   Dimensions,
   FlatList,
@@ -20,42 +21,48 @@ const numColumns = 2;
 const { width } = Dimensions.get("window");
 const itemSize = (width - 30) / numColumns; // 15 de padding horizontal
 
-export const SavedImageGrid = ({
-  images,
-  onImagePress,
-  onDeleteImage,
-  isDeleting = false,
-}: SavedImageGridProps) => {
-  const renderImage = ({ item }: { item: Image }) => (
-    <View style={styles.imageContainer}>
-      <Pressable onPress={() => onImagePress(item)}>
-        <ImageWithLocalSupport image={item} style={styles.image} />
-        <View style={styles.imageOverlay}>
-          <Text style={styles.authorText}>{item.author}</Text>
-        </View>
-      </Pressable>
+export const SavedImageGrid = memo(
+  ({
+    images,
+    onImagePress,
+    onDeleteImage,
+    isDeleting = false,
+  }: SavedImageGridProps) => {
+    const renderImage = ({ item }: { item: Image }) => (
+      <View style={styles.imageContainer}>
+        <Pressable onPress={() => onImagePress(item)}>
+          <ImageWithLocalSupport image={item} style={styles.image} />
+          <View style={styles.imageOverlay}>
+            <Text style={styles.authorText}>{item.author}</Text>
+          </View>
+        </Pressable>
 
-      <Pressable
-        style={styles.deleteButton}
-        onPress={() => onDeleteImage(item)}
-        disabled={isDeleting}
-      >
-        <Text style={styles.deleteButtonText}>{isDeleting ? "..." : "🗑️"}</Text>
-      </Pressable>
-    </View>
-  );
+        <Pressable
+          style={styles.deleteButton}
+          onPress={() => onDeleteImage(item)}
+          disabled={isDeleting}
+        >
+          <Text style={styles.deleteButtonText}>
+            {isDeleting ? "..." : "🗑️"}
+          </Text>
+        </Pressable>
+      </View>
+    );
 
-  return (
-    <FlatList
-      data={images}
-      keyExtractor={(item) => item.id}
-      numColumns={numColumns}
-      contentContainerStyle={styles.container}
-      renderItem={renderImage}
-      showsVerticalScrollIndicator={false}
-    />
-  );
-};
+    return (
+      <FlatList
+        data={images}
+        keyExtractor={(item) => item.id}
+        numColumns={numColumns}
+        contentContainerStyle={styles.container}
+        renderItem={renderImage}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  }
+);
+
+SavedImageGrid.displayName = "SavedImageGrid";
 
 const styles = StyleSheet.create({
   container: {

@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import React, { memo } from "react";
 import { Dimensions, FlatList, Pressable, StyleSheet } from "react-native";
 import { Image } from "../../domain/entities/Image";
 import { ImageWithLocalSupport } from "./ImageWithLocalSupport";
@@ -11,7 +12,7 @@ const numColumns = 3;
 const { width } = Dimensions.get("window");
 const itemSize = (width - 20) / numColumns; // 10 de padding horizontal
 
-export const ImageGrid = ({ images }: ImageGridProps) => {
+export const ImageGrid = memo(({ images }: ImageGridProps) => {
   const router = useRouter();
 
   const handlePress = (image: Image) => {
@@ -34,7 +35,9 @@ export const ImageGrid = ({ images }: ImageGridProps) => {
       )}
     />
   );
-};
+});
+
+ImageGrid.displayName = "ImageGrid";
 
 const styles = StyleSheet.create({
   container: {
