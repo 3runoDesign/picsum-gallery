@@ -1,7 +1,3 @@
-/**
- * Hook para buscar imagens aleatórias usando TanStack Query
- */
-
 import { useQuery } from "@tanstack/react-query";
 import { Duration } from "js-duration";
 import { AxiosClient } from "../../api/axiosClient";

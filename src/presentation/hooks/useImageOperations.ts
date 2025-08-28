@@ -1,10 +1,3 @@
-/**
- * Hook orquestrador para operações de imagem
- *
- * Este hook combina TanStack Query (dados da API) e Redux (imagens salvas)
- * fornecendo uma interface unificada para a UI.
- */
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";

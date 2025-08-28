@@ -1,10 +1,3 @@
-/**
- * Componente observador global para tratamento de erros
- *
- * Este componente monitora o estado de erro do Redux e exibe
- * alertas quando necessário, centralizando o tratamento de erros.
- */
-
 import React, { useEffect } from "react";
 import { Alert } from "react-native";
 import { useDispatch, useSelector } from "react-redux";

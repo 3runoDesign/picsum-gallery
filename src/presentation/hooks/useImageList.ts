@@ -1,10 +1,3 @@
-/**
- * Hook para lista de imagens da galeria usando TanStack Query
- *
- * Este hook utiliza useInfiniteQuery para gerenciar a paginação
- * e o ciclo de vida dos dados da API da Picsum.
- */
-
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Duration } from "js-duration";
 import { AxiosClient } from "../../api/axiosClient";

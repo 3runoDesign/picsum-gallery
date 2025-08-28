@@ -4,9 +4,6 @@ import { Image } from "../domain/entities/Image";
 export class ImageDownloadService {
   private static readonly IMAGES_DIR = `${FileSystem.documentDirectory}images/`;
 
-  /**
-   * Cria o diretório de imagens se não existir
-   */
   private static async ensureImagesDirectory(): Promise<void> {
     const dirInfo = await FileSystem.getInfoAsync(this.IMAGES_DIR);
     if (!dirInfo.exists) {
@@ -16,11 +13,6 @@ export class ImageDownloadService {
     }
   }
 
-  /**
-   * Baixa uma imagem da URL e salva localmente
-   * @param image - A imagem a ser baixada
-   * @returns O caminho local da imagem salva
-   */
   static async downloadAndSaveImage(image: Image): Promise<string> {
     try {
       await this.ensureImagesDirectory();
@@ -50,11 +42,6 @@ export class ImageDownloadService {
     }
   }
 
-  /**
-   * Verifica se uma imagem já foi baixada localmente
-   * @param imageId - ID da imagem
-   * @returns O caminho local se existir, null caso contrário
-   */
   static async getLocalImagePath(imageId: string): Promise<string | null> {
     try {
       await this.ensureImagesDirectory();
@@ -74,10 +61,6 @@ export class ImageDownloadService {
     }
   }
 
-  /**
-   * Remove uma imagem local
-   * @param localPath - Caminho local da imagem
-   */
   static async deleteLocalImage(localPath: string): Promise<void> {
     try {
       const fileInfo = await FileSystem.getInfoAsync(localPath);
@@ -90,11 +73,6 @@ export class ImageDownloadService {
     }
   }
 
-  /**
-   * Obtém a extensão do arquivo baseada na URL
-   * @param url - URL da imagem
-   * @returns Extensão do arquivo (ex: .jpg, .png)
-   */
   private static getFileExtension(url: string): string {
     try {
       const urlObj = new URL(url);
@@ -110,9 +88,6 @@ export class ImageDownloadService {
     }
   }
 
-  /**
-   * Limpa todas as imagens locais (útil para limpeza de cache)
-   */
   static async clearAllLocalImages(): Promise<void> {
     try {
       const dirInfo = await FileSystem.getInfoAsync(this.IMAGES_DIR);
