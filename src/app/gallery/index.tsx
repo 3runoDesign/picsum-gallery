@@ -13,7 +13,7 @@ import {
 import { Image } from "../../domain/entities/Image";
 import { CustomImage } from "../../presentation/components/CustomImage";
 import { useImageList } from "../../presentation/hooks/useImageList";
-import { useImageOperations } from "../../presentation/hooks/useImageQueries";
+import { useImageOperations } from "../../presentation/hooks/useImageOperations";
 
 const numColumns = 2;
 const { width } = Dimensions.get("window");
@@ -48,12 +48,12 @@ export default function GalleryScreen() {
   // Sincroniza imagens salvas da API com estado local de forma otimizada
   useEffect(() => {
     if (savedImages.length > 0) {
-      const apiSavedIds = new Set(savedImages.map((img) => img.id));
+      const apiSavedIds = new Set(savedImages.map((img: Image) => img.id));
 
       // Só atualiza se houver mudanças reais para evitar re-renders desnecessários
       if (
         apiSavedIds.size !== localSavedImages.size ||
-        [...apiSavedIds].some((id) => !localSavedImages.has(id))
+        [...apiSavedIds].some((id: string) => !localSavedImages.has(id))
       ) {
         setLocalSavedImages(apiSavedIds);
       }
@@ -99,7 +99,7 @@ export default function GalleryScreen() {
       setLocalSavedImages((prev) => new Set(prev).add(image.id));
 
       // Alert.alert("Sucesso", "Imagem salva com sucesso!");
-    } catch (error) {
+    } catch {
       Alert.alert("Erro", "Falha ao salvar imagem");
     } finally {
       // Remove a imagem do conjunto de imagens sendo salvas
@@ -177,9 +177,18 @@ export default function GalleryScreen() {
     );
   };
 
-  if (error) {
-    Alert.alert("Erro", `Erro ao carregar imagens: ${error.message || error}`);
-  }
+  // Renderiza tela de erro com botão de retry
+  const renderErrorScreen = () => (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorTitle}>Erro ao carregar galeria</Text>
+      <Text style={styles.errorMessage}>
+        {error || "Ocorreu um problema ao carregar as imagens."}
+      </Text>
+      <Pressable style={styles.retryButton} onPress={refetch}>
+        <Text style={styles.retryButtonText}>Tentar Novamente</Text>
+      </Pressable>
+    </View>
+  );
 
   // Mostra loading enquanto carrega imagens salvas ou galeria
   if (isLoading || loadingSavedImages) {
@@ -193,6 +202,11 @@ export default function GalleryScreen() {
         </Text>
       </View>
     );
+  }
+
+  // Mostra tela de erro se houver erro
+  if (error) {
+    return renderErrorScreen();
   }
 
   return (
@@ -246,6 +260,36 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: "#666",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    gap: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FF3B30",
+    textAlign: "center",
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  retryButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
   listContainer: {
     padding: 10,

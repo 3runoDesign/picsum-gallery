@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { ImageWithLocalSupport } from "../presentation/components/ImageWithLocalSupport";
 import { useImageHistory } from "../presentation/hooks/useImageHistory";
-import { useImageOperations } from "../presentation/hooks/useImageQueries";
+import { useImageOperations } from "../presentation/hooks/useImageOperations";
 
 export default function HomeScreen() {
   const {

@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { Image } from "../../domain/entities/Image";
-import { useImageOperations } from "../../presentation/hooks/useImageQueries";
+import { useImageOperations } from "../../presentation/hooks/useImageOperations";
 
 export default function ImageDetailScreen() {
   const { url, id, author, width, height } = useLocalSearchParams<{
@@ -34,7 +34,7 @@ export default function ImageDetailScreen() {
 
   // Estado derivado calculado com useMemo para evitar recálculos desnecessários
   const isImageSaved = useMemo(
-    () => savedImages.some((img) => img.id === id),
+    () => savedImages.some((img: Image) => img.id === id),
     [savedImages, id]
   );
 

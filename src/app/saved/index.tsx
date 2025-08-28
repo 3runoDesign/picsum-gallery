@@ -1,7 +1,7 @@
 import { SavedImageGrid } from "@/src/presentation/components/SavedImageGrid";
-import { useImageOperations } from "@/src/presentation/hooks/useImageQueries";
+import { useImageOperations } from "@/src/presentation/hooks/useImageOperations";
 import { useNavigation, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -25,6 +25,28 @@ export default function SavedImagesScreen() {
   const router = useRouter();
   const navigation = useNavigation();
 
+  const handleClearAllImages = useCallback(() => {
+    Alert.alert(
+      "Confirmar Limpeza",
+      `Deseja realmente remover TODAS as ${savedImages.length} imagens salvas? Esta ação não pode ser desfeita.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Limpar Tudo",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await clearAllImages();
+              Alert.alert("Sucesso", "Todas as imagens foram removidas!");
+            } catch {
+              Alert.alert("Erro", "Falha ao limpar imagens");
+            }
+          },
+        },
+      ]
+    );
+  }, [savedImages.length, clearAllImages]);
+
   // Configura o header da navegação com o botão "Limpar Tudo"
   useEffect(() => {
     navigation.setOptions({
@@ -43,7 +65,7 @@ export default function SavedImagesScreen() {
         </Pressable>
       ),
     });
-  }, [navigation, clearingAllImages]);
+  }, [navigation, clearingAllImages, handleClearAllImages]);
 
   const handleImagePress = (image: Image) => {
     router.push({
@@ -83,30 +105,8 @@ export default function SavedImagesScreen() {
             try {
               await deleteImage(image.id);
               Alert.alert("Sucesso", "Imagem excluída com sucesso!");
-            } catch (error) {
+            } catch {
               Alert.alert("Erro", "Falha ao excluir imagem");
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleClearAllImages = () => {
-    Alert.alert(
-      "Confirmar Limpeza",
-      `Deseja realmente remover TODAS as ${savedImages.length} imagens salvas? Esta ação não pode ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Limpar Tudo",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await clearAllImages();
-              Alert.alert("Sucesso", "Todas as imagens foram removidas!");
-            } catch (error) {
-              Alert.alert("Erro", "Falha ao limpar imagens");
             }
           },
         },

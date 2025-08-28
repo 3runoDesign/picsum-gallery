@@ -1,35 +1,64 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { Duration } from "js-duration";
-import { AxiosClient } from "../../api/axiosClient";
-import { Image } from "../../domain/entities/Image";
-import { PicsumImage } from "../../domain/entities/PicsumImage";
+/**
+ * Hook para lista de imagens da galeria usando Redux
+ *
+ * Este hook substitui o useImageList.ts e fornece
+ * a funcionalidade de paginação através do Redux.
+ */
+
+import { useCallback, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../../redux/store";
+import { fetchGalleryImages } from "../../redux/reducers/imageReducer";
 
 export const useImageList = () => {
-  return useInfiniteQuery({
-    queryKey: ["image-list"],
-    queryFn: async ({ pageParam = 1 }): Promise<Image[]> => {
-      const httpClient = new AxiosClient("https://picsum.photos");
-      const response = await httpClient.get<PicsumImage[]>(
-        `/v2/list?page=${pageParam}&limit=10`
-      );
+  const dispatch = useDispatch<AppDispatch>();
+  
+  // Estados do Redux
+  const {
+    galleryImages,
+    galleryPage,
+    galleryHasMore,
+    galleryLoading,
+    galleryError,
+  } = useSelector((state: RootState) => state.images);
 
-      return response.map((picsumImage: PicsumImage) => ({
-        id: picsumImage.id,
-        url: picsumImage.download_url,
-        author: picsumImage.author,
-        width: picsumImage.width,
-        height: picsumImage.height,
-        isSaved: false, // Será determinado pelo estado local na galeria
-      }));
-    },
-    getNextPageParam: (lastPage, allPages) => {
-      // Se a última página tem menos de 10 itens, não há mais páginas
-      if (lastPage.length < 10) {
-        return undefined;
-      }
-      return allPages.length + 1;
-    },
-    staleTime: Duration.of({ minutes: 5 }).inMilliseconds,
-    initialPageParam: 1,
-  });
+  // Carrega a primeira página apenas se não houver dados existentes
+  useEffect(() => {
+    if (galleryImages.length === 0 && galleryLoading === 'idle') {
+      dispatch(fetchGalleryImages(1));
+    }
+  }, [dispatch, galleryImages.length, galleryLoading]);
+
+  // Função para buscar a próxima página
+  const fetchNextPage = useCallback(() => {
+    if (galleryHasMore && galleryLoading !== 'pending') {
+      dispatch(fetchGalleryImages(galleryPage + 1));
+    }
+  }, [dispatch, galleryHasMore, galleryLoading, galleryPage]);
+
+  // Função para recarregar a primeira página
+  const refetch = useCallback(() => {
+    dispatch(fetchGalleryImages(1));
+  }, [dispatch]);
+
+  // Estados computados para compatibilidade com a interface anterior
+  const isLoading = galleryLoading === 'pending' && galleryPage === 1;
+  const isFetchingNextPage = galleryLoading === 'pending' && galleryPage > 1;
+  const hasNextPage = galleryHasMore;
+  const error = galleryError;
+
+  // Flatten das imagens (mantém compatibilidade com a interface anterior)
+  const data = {
+    pages: [galleryImages],
+  };
+
+  return {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  };
 };

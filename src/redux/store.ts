@@ -3,6 +3,7 @@ import imageReducer from "./reducers/imageReducer";
 
 // Importe as dependências que serão injetadas
 import {
+  clearAllUseCase,
   deleteUseCase,
   listUseCase,
   saveUseCase,
@@ -20,6 +21,7 @@ export const store = configureStore({
           listUseCase,
           saveUseCase,
           deleteUseCase,
+          clearAllUseCase,
         },
       },
     }),
