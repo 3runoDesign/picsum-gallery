@@ -10,21 +10,15 @@ export class ImageService {
   ) {}
 
   async fetchRandomImage(): Promise<Image> {
-    // Gera um número aleatório para a página (1-100) para obter imagens diferentes
     const randomPage = Math.floor(Math.random() * 100) + 1;
-    console.log(`Buscando imagem na página ${randomPage}...`);
-
     const images = await this.apiClient.get<PicsumImage[]>(
       `/v2/list?page=${randomPage}&limit=1`
     );
-
-    console.log("Resposta da API:", images);
 
     if (!images || images.length === 0) {
       throw new Error("Nenhuma imagem encontrada.");
     }
     const fetchedImage = images[0];
-    console.log("Imagem obtida:", fetchedImage);
 
     const result = {
       id: fetchedImage.id,
@@ -33,8 +27,6 @@ export class ImageService {
       width: fetchedImage.width,
       height: fetchedImage.height,
     };
-
-    console.log("Imagem convertida:", result);
     return result;
   }
 

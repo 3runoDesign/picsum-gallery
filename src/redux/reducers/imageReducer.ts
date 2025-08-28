@@ -5,14 +5,11 @@ import { ListSavedImagesUseCase } from "../../data/usecases/listImages";
 import { SaveImageUseCase } from "../../data/usecases/saveImage";
 import { Image } from "../../domain/entities/Image";
 
-// Tipos para status de carregamento
 type LoadingStatus = "idle" | "pending" | "succeeded" | "failed";
 
 interface ImageState {
-  // Estado das imagens salvas
   savedImages: Image[];
 
-  // Estados de carregamento granulares
   status: {
     saved: LoadingStatus;
     save: LoadingStatus;
@@ -20,7 +17,6 @@ interface ImageState {
     clearAll: LoadingStatus;
   };
 
-  // Estados de erro granulares
   errors: {
     saved: string | null;
     save: string | null;
@@ -45,7 +41,6 @@ const initialState: ImageState = {
   },
 };
 
-// Thunk para carregar imagens salvas
 export const loadSavedImages = createAsyncThunk(
   "images/loadSavedImages",
   async (_, { extra }) => {
@@ -56,7 +51,6 @@ export const loadSavedImages = createAsyncThunk(
   }
 );
 
-// Thunk para salvar uma imagem
 export const saveImage = createAsyncThunk(
   "images/saveImage",
   async (image: Image, { extra }) => {
@@ -68,7 +62,6 @@ export const saveImage = createAsyncThunk(
   }
 );
 
-// Thunk para deletar uma imagem
 export const deleteImage = createAsyncThunk(
   "images/deleteImage",
   async (id: string, { extra }) => {
@@ -80,7 +73,6 @@ export const deleteImage = createAsyncThunk(
   }
 );
 
-// Thunk para limpar todas as imagens salvas
 export const clearAllImages = createAsyncThunk(
   "images/clearAllImages",
   async (_, { extra }) => {
@@ -95,7 +87,6 @@ const imageSlice = createSlice({
   name: "images",
   initialState,
   reducers: {
-    // Actions para limpar erros específicos
     clearError: (state, action) => {
       const errorType = action.payload as keyof typeof state.errors;
       if (errorType && state.errors[errorType]) {
@@ -103,14 +94,12 @@ const imageSlice = createSlice({
       }
     },
 
-    // Action para limpar todos os erros
     clearAllErrors: (state) => {
       Object.keys(state.errors).forEach((key) => {
         state.errors[key as keyof typeof state.errors] = null;
       });
     },
 
-    // Action para resetar estado de uma operação específica
     resetOperationStatus: (state, action) => {
       const operation = action.payload as keyof typeof state.status;
       if (operation && state.status[operation]) {
@@ -120,7 +109,6 @@ const imageSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Load Saved Images
     builder
       .addCase(loadSavedImages.pending, (state) => {
         state.status.saved = "pending";
@@ -135,7 +123,6 @@ const imageSlice = createSlice({
         state.errors.saved = action.error.message || "Erro ao carregar imagens";
       });
 
-    // Save Image
     builder
       .addCase(saveImage.pending, (state) => {
         state.status.save = "pending";
@@ -150,7 +137,6 @@ const imageSlice = createSlice({
         state.errors.save = action.error.message || "Erro ao salvar imagem";
       });
 
-    // Delete Image
     builder
       .addCase(deleteImage.pending, (state) => {
         state.status.delete = "pending";
@@ -167,7 +153,6 @@ const imageSlice = createSlice({
         state.errors.delete = action.error.message || "Erro ao deletar imagem";
       });
 
-    // Clear All Images
     builder
       .addCase(clearAllImages.pending, (state) => {
         state.status.clearAll = "pending";

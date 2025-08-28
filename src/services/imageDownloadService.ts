@@ -25,23 +25,16 @@ export class ImageDownloadService {
     try {
       await this.ensureImagesDirectory();
 
-      // Gera um nome único para o arquivo baseado no ID da imagem
       const fileExtension = this.getFileExtension(image.url);
       const fileName = `${image.id}${fileExtension}`;
       const localPath = `${this.IMAGES_DIR}${fileName}`;
 
-      console.log(`Baixando imagem ${image.id} para: ${localPath}`);
-
-      // Baixa a imagem da URL
       const downloadResult = await FileSystem.downloadAsync(
         image.url,
         localPath
       );
 
       if (downloadResult.status === 200) {
-        console.log(
-          `Imagem ${image.id} baixada com sucesso para: ${downloadResult.uri}`
-        );
         return downloadResult.uri;
       } else {
         throw new Error(
@@ -49,7 +42,6 @@ export class ImageDownloadService {
         );
       }
     } catch (error) {
-      console.error(`Erro ao baixar imagem ${image.id}:`, error);
       throw new Error(
         `Erro ao baixar imagem: ${
           error instanceof Error ? error.message : "Erro desconhecido"
@@ -67,10 +59,8 @@ export class ImageDownloadService {
     try {
       await this.ensureImagesDirectory();
 
-      // Lista todos os arquivos no diretório de imagens
       const files = await FileSystem.readDirectoryAsync(this.IMAGES_DIR);
 
-      // Procura por um arquivo que comece com o ID da imagem
       const matchingFile = files.find((file) => file.startsWith(imageId));
 
       if (matchingFile) {
@@ -93,7 +83,6 @@ export class ImageDownloadService {
       const fileInfo = await FileSystem.getInfoAsync(localPath);
       if (fileInfo.exists) {
         await FileSystem.deleteAsync(localPath);
-        console.log(`Imagem local removida: ${localPath}`);
       }
     } catch (error) {
       console.error(`Erro ao remover imagem local ${localPath}:`, error);
@@ -112,7 +101,6 @@ export class ImageDownloadService {
       const pathname = urlObj.pathname;
       const extension = pathname.split(".").pop();
 
-      // Se não conseguir extrair a extensão da URL, usa .jpg como padrão
       return extension &&
         ["jpg", "jpeg", "png", "gif", "webp"].includes(extension.toLowerCase())
         ? `.${extension.toLowerCase()}`
@@ -130,7 +118,6 @@ export class ImageDownloadService {
       const dirInfo = await FileSystem.getInfoAsync(this.IMAGES_DIR);
       if (dirInfo.exists) {
         await FileSystem.deleteAsync(this.IMAGES_DIR);
-        console.log("Todas as imagens locais foram removidas");
       }
     } catch (error) {
       console.error("Erro ao limpar imagens locais:", error);

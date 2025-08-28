@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -16,12 +16,11 @@ import { useImageOperations } from "../../presentation/hooks/useImageOperations"
 
 const numColumns = 2;
 const { width } = Dimensions.get("window");
-const itemSize = (width - 30) / numColumns; // 15 de padding horizontal
+const itemSize = (width - 30) / numColumns;
 
 export default function GalleryScreen() {
   const router = useRouter();
 
-  // TanStack Query para dados da galeria
   const {
     allImages,
     isLoading,
@@ -32,7 +31,6 @@ export default function GalleryScreen() {
     refetch,
   } = useImageList();
 
-  // Redux para operações de imagens salvas
   const {
     saveImage,
     savedImages,
@@ -42,136 +40,121 @@ export default function GalleryScreen() {
     deletingImage,
   } = useImageOperations();
 
-  // Estado local para controlar imagens sendo salvas
   const [savingImages, setSavingImages] = useState<Set<string>>(new Set());
 
-  // Estado local para imagens salvas (otimizado para performance)
-  const [localSavedImages, setLocalSavedImages] = useState<Set<string>>(
-    new Set()
-  );
+  const savedImagesSet = useMemo(() => {
+    return new Set(savedImages.map((img: Image) => img.id));
+  }, [savedImages]);
 
-  // Sincroniza imagens salvas da API com estado local de forma otimizada
-  useEffect(() => {
-    if (savedImages.length > 0) {
-      const apiSavedIds = new Set(savedImages.map((img: Image) => img.id));
-
-      // Só atualiza se houver mudanças reais para evitar re-renders desnecessários
-      if (
-        apiSavedIds.size !== localSavedImages.size ||
-        [...apiSavedIds].some((id: string) => !localSavedImages.has(id))
-      ) {
-        setLocalSavedImages(apiSavedIds);
-      }
-    }
-  }, [savedImages, localSavedImages]);
-
-  // Refaz apenas as imagens salvas quando o usuário volta para a galeria
   useFocusEffect(
     useCallback(() => {
-      // Atualiza apenas as imagens salvas da API para garantir sincronização
-      // NÃO recarrega a lista principal da galeria
       refreshSavedImages();
     }, [refreshSavedImages])
   );
 
-  const handleImagePress = (image: Image) => {
-    const isSaved = isImageSaved(image.id);
-    router.push({
-      pathname: "/images/[url]" as any,
-      params: {
-        url: image.url,
-        id: image.id,
-        author: image.author,
-        width: image.width.toString(),
-        height: image.height.toString(),
-        isSaved: isSaved.toString(),
-      },
-    });
-  };
-
-  const handleSaveImage = async (image: Image) => {
-    // Verifica se a imagem já está sendo salva
-    if (savingImages.has(image.id)) {
-      return; // Previne cliques múltiplos
-    }
-
-    // Adiciona a imagem ao conjunto de imagens sendo salvas
-    setSavingImages((prev) => new Set(prev).add(image.id));
-
-    try {
-      await saveImage(image);
-
-      // Atualiza o estado local imediatamente para destacar a imagem
-      setLocalSavedImages((prev) => new Set(prev).add(image.id));
-    } catch {
-      // Erro tratado pelo ErrorObserver global
-    } finally {
-      // Remove a imagem do conjunto de imagens sendo salvas
-      setSavingImages((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(image.id);
-        return newSet;
+  const handleImagePress = useCallback(
+    (image: Image) => {
+      const isSaved = savedImagesSet.has(image.id);
+      router.push({
+        pathname: "/images/[url]" as any,
+        params: {
+          url: image.url,
+          id: image.id,
+          author: image.author,
+          width: image.width.toString(),
+          height: image.height.toString(),
+          isSaved: isSaved.toString(),
+        },
       });
-    }
-  };
+    },
+    [router, savedImagesSet]
+  );
 
-  const handleLoadMore = () => {
+  const handleSaveImage = useCallback(
+    async (image: Image) => {
+      if (savingImages.has(image.id)) {
+        return;
+      }
+
+      setSavingImages((prev) => new Set(prev).add(image.id));
+
+      try {
+        await saveImage(image);
+      } catch {
+      } finally {
+        setSavingImages((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(image.id);
+          return newSet;
+        });
+      }
+    },
+    [saveImage, savingImages]
+  );
+
+  const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Função otimizada para determinar se uma imagem está salva
   const isImageSaved = useCallback(
     (imageId: string) => {
-      return localSavedImages.has(imageId);
+      return savedImagesSet.has(imageId);
     },
-    [localSavedImages]
+    [savedImagesSet]
   );
 
-  const renderImage = ({ item }: { item: Image }) => {
-    const isThisImageSaving = savingImages.has(item.id);
-    const isSaved = isImageSaved(item.id);
-    const isButtonDisabled = isThisImageSaving || isSaved;
+  const renderImage = useCallback(
+    ({ item }: { item: Image }) => {
+      const isThisImageSaving = savingImages.has(item.id);
+      const isSaved = isImageSaved(item.id);
+      const isButtonDisabled = isThisImageSaving || isSaved;
 
-    return (
-      <Pressable
-        style={[styles.imageContainer, isSaved && styles.savedImageContainer]}
-        onPress={() => handleImagePress(item)}
-      >
-        <CustomImage source={{ uri: item.url }} style={styles.image} />
-        {isSaved && (
-          <View style={styles.savedIndicator}>
-            <Text style={styles.savedText}>✓</Text>
-          </View>
-        )}
-        <View style={styles.imageOverlay}>
-          <Text style={styles.authorText}>{item.author}</Text>
-          <Pressable
-            style={[
-              styles.saveButton,
-              isSaved && styles.savedButton,
-              isThisImageSaving && styles.savingButton,
-            ]}
-            onPress={() => handleSaveImage(item)}
-            disabled={isButtonDisabled}
-          >
-            <Text
+      return (
+        <Pressable
+          style={[styles.imageContainer, isSaved && styles.savedImageContainer]}
+          onPress={() => handleImagePress(item)}
+        >
+          <CustomImage source={{ uri: item.url }} style={styles.image} />
+          {isSaved && (
+            <View style={styles.savedIndicator}>
+              <Text style={styles.savedText}>✓</Text>
+            </View>
+          )}
+          <View style={styles.imageOverlay}>
+            <Text style={styles.authorText}>{item.author}</Text>
+            <Pressable
               style={[
-                styles.saveButtonText,
-                isSaved && styles.savedButtonText,
-                isThisImageSaving && styles.savingButtonText,
+                styles.saveButton,
+                isSaved && styles.savedButton,
+                isThisImageSaving && styles.savingButton,
               ]}
+              onPress={() => handleSaveImage(item)}
+              disabled={isButtonDisabled}
             >
-              {isThisImageSaving ? "Salvando..." : isSaved ? "Salva" : "Salvar"}
-            </Text>
-          </Pressable>
-        </View>
-      </Pressable>
-    );
-  };
+              <Text
+                style={[
+                  styles.saveButtonText,
+                  isSaved && styles.savedButtonText,
+                  isThisImageSaving && styles.savingButtonText,
+                ]}
+              >
+                {isThisImageSaving
+                  ? "Salvando..."
+                  : isSaved
+                  ? "Salva"
+                  : "Salvar"}
+              </Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      );
+    },
+    [handleImagePress, handleSaveImage, isImageSaved, savingImages]
+  );
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!isFetchingNextPage) return null;
     return (
       <View style={styles.footerLoader}>
@@ -179,22 +162,23 @@ export default function GalleryScreen() {
         <Text style={styles.footerText}>Carregando mais imagens...</Text>
       </View>
     );
-  };
+  }, [isFetchingNextPage]);
 
-  // Renderiza tela de erro com botão de retry
-  const renderErrorScreen = () => (
-    <View style={styles.errorContainer}>
-      <Text style={styles.errorTitle}>Erro ao carregar galeria</Text>
-      <Text style={styles.errorMessage}>
-        {error?.message || "Ocorreu um problema ao carregar as imagens."}
-      </Text>
-      <Pressable style={styles.retryButton} onPress={() => refetch()}>
-        <Text style={styles.retryButtonText}>Tentar Novamente</Text>
-      </Pressable>
-    </View>
+  const renderErrorScreen = useCallback(
+    () => (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Erro ao carregar galeria</Text>
+        <Text style={styles.errorMessage}>
+          {error?.message || "Ocorreu um problema ao carregar as imagens."}
+        </Text>
+        <Pressable style={styles.retryButton} onPress={() => refetch()}>
+          <Text style={styles.retryButtonText}>Tentar Novamente</Text>
+        </Pressable>
+      </View>
+    ),
+    [error, refetch]
   );
 
-  // Mostra loading enquanto carrega imagens salvas ou galeria
   if (isLoading || loadingSavedImages) {
     return (
       <View style={styles.loadingContainer}>
@@ -208,7 +192,6 @@ export default function GalleryScreen() {
     );
   }
 
-  // Mostra tela de erro se houver erro
   if (error) {
     return renderErrorScreen();
   }

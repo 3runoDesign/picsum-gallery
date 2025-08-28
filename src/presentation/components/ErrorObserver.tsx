@@ -16,17 +16,14 @@ export const ErrorObserver: React.FC = () => {
   const errors = useSelector((state: RootState) => state.images.errors);
 
   useEffect(() => {
-    // Monitora cada tipo de erro e exibe alerta quando necessário
     Object.entries(errors).forEach(([errorType, errorMessage]) => {
       if (errorMessage) {
-        // Mapeia o tipo de erro para uma mensagem amigável
         const errorTitle = getErrorTitle(errorType);
 
         Alert.alert(errorTitle, errorMessage, [
           {
             text: "OK",
             onPress: () => {
-              // Limpa o erro após o usuário confirmar
               dispatch(clearError(errorType as keyof typeof errors));
             },
           },
@@ -35,7 +32,6 @@ export const ErrorObserver: React.FC = () => {
     });
   }, [errors, dispatch]);
 
-  // Função para mapear tipos de erro para títulos amigáveis
   const getErrorTitle = (errorType: string): string => {
     const errorTitles: Record<string, string> = {
       saved: "Erro ao Carregar Imagens Salvas",
@@ -47,6 +43,5 @@ export const ErrorObserver: React.FC = () => {
     return errorTitles[errorType] || "Erro";
   };
 
-  // Este componente não renderiza nada visualmente
   return null;
 };

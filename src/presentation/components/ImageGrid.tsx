@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { Image } from "../../domain/entities/Image";
 import { CustomImage } from "./CustomImage";
@@ -16,19 +16,25 @@ export const ImageGrid = memo<ImageGridProps>(({
   numColumns = 2,
   contentContainerStyle,
 }) => {
-  const renderImage = ({ item }: { item: Image }) => (
+  const handleImagePress = useCallback((image: Image) => {
+    onImagePress?.(image);
+  }, [onImagePress]);
+
+  const renderImage = useCallback(({ item }: { item: Image }) => (
     <CustomImage
       source={{ uri: item.url }}
       style={styles.image}
-      onPress={() => onImagePress?.(item)}
+      onPress={() => handleImagePress(item)}
     />
-  );
+  ), [handleImagePress]);
+
+  const keyExtractor = useCallback((item: Image) => item.id, []);
 
   return (
     <View style={styles.container}>
       <FlatList
         data={images}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         numColumns={numColumns}
         renderItem={renderImage}
         contentContainerStyle={[styles.listContainer, contentContainerStyle]}

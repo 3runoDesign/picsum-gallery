@@ -27,7 +27,6 @@ export default function SavedImagesScreen() {
     clearAllImages();
   }, [clearAllImages]);
 
-  // Configura o header da navegação com o botão "Limpar Tudo"
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -47,38 +46,42 @@ export default function SavedImagesScreen() {
     });
   }, [navigation, clearingAllImages, handleClearAllImages]);
 
-  const handleImagePress = (image: Image) => {
-    router.push({
-      pathname: "/images/[url]" as any,
-      params: {
-        ...(() => {
-          let newWidth = image.width;
-          let newHeight = image.height;
-          if (image.width !== 800) {
-            newWidth = Math.round(image.width * 0.7);
-            newHeight = Math.round(image.height * 0.7);
-          }
+  const handleImagePress = useCallback(
+    (image: Image) => {
+      router.push({
+        pathname: "/images/[url]" as any,
+        params: {
+          ...(() => {
+            let newWidth = image.width;
+            let newHeight = image.height;
+            if (image.width !== 800) {
+              newWidth = Math.round(image.width * 0.7);
+              newHeight = Math.round(image.height * 0.7);
+            }
 
-          return {
-            url: `https://picsum.photos/id/${image.id}/${newWidth}/${newHeight}`,
-            id: image.id,
-            author: image.author,
-            width: newWidth.toString(),
-            height: newHeight.toString(),
-            isSaved: "true",
-          };
-        })(),
-      },
-    });
-  };
+            return {
+              url: `https://picsum.photos/id/${image.id}/${newWidth}/${newHeight}`,
+              id: image.id,
+              author: image.author,
+              width: newWidth.toString(),
+              height: newHeight.toString(),
+              isSaved: "true",
+            };
+          })(),
+        },
+      });
+    },
+    [router]
+  );
 
-  const handleDeleteImage = async (image: Image) => {
-    try {
-      await deleteImage(image.id);
-    } catch {
-      // Erro tratado pelo ErrorObserver global
-    }
-  };
+  const handleDeleteImage = useCallback(
+    async (image: Image) => {
+      try {
+        await deleteImage(image.id);
+      } catch {}
+    },
+    [deleteImage]
+  );
 
   if (loadingSavedImages) {
     return (

@@ -1,13 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import imageReducer from "./reducers/imageReducer";
 
-// Importe as dependências que serão injetadas
 import {
   clearAllUseCase,
   deleteUseCase,
   listUseCase,
   saveUseCase,
-} from "@/src/core/dependenciesContext"; // Exponha as instâncias
+} from "@/src/core/dependenciesContext";
 
 export const store = configureStore({
   reducer: {
@@ -17,7 +16,6 @@ export const store = configureStore({
     getDefaultMiddleware({
       thunk: {
         extraArgument: {
-          // É aqui que a mágica acontece!
           listUseCase,
           saveUseCase,
           deleteUseCase,

@@ -14,16 +14,13 @@ export class AsyncStorageImageStorage implements ImageStorageRepository {
   async saveImage(image: Image): Promise<void> {
     const currentImages = await this.getSavedImages();
 
-    // Verifica se a imagem já existe
     const existingImageIndex = currentImages.findIndex(
       (img) => img.id === image.id
     );
 
     if (existingImageIndex >= 0) {
-      // Atualiza a imagem existente
       currentImages[existingImageIndex] = image;
     } else {
-      // Adiciona nova imagem
       currentImages.push(image);
     }
 
@@ -34,13 +31,11 @@ export class AsyncStorageImageStorage implements ImageStorageRepository {
     const currentImages = await this.getSavedImages();
     const imageToDelete = currentImages.find((img) => img.id === id);
 
-    // Remove a imagem local se existir
     if (imageToDelete?.localPath) {
       try {
         await ImageDownloadService.deleteLocalImage(imageToDelete.localPath);
       } catch (error) {
         console.error(`Erro ao remover imagem local para ${id}:`, error);
-        // Continua com a remoção mesmo se falhar ao deletar o arquivo local
       }
     }
 
@@ -49,7 +44,6 @@ export class AsyncStorageImageStorage implements ImageStorageRepository {
   }
 
   async clearAllImages(): Promise<void> {
-    // Remove todas as imagens locais se existirem
     const currentImages = await this.getSavedImages();
 
     for (const image of currentImages) {
@@ -61,12 +55,10 @@ export class AsyncStorageImageStorage implements ImageStorageRepository {
             `Erro ao remover imagem local para ${image.id}:`,
             error
           );
-          // Continua com a limpeza mesmo se falhar ao deletar o arquivo local
         }
       }
     }
 
-    // Limpa o AsyncStorage
     await AsyncStorage.removeItem(IMAGES_KEY);
   }
 }

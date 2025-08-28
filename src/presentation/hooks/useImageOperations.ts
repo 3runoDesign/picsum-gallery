@@ -22,53 +22,44 @@ export const useImageOperations = () => {
   const dispatch = useDispatch<AppDispatch>();
   const queryClient = useQueryClient();
 
-  // Estados do Redux (apenas imagens salvas)
   const { savedImages, status, errors } = useSelector(
     (state: RootState) => state.images
   );
 
-  // Mutation para salvar imagem
   const saveImageMutation = useMutation({
     mutationFn: async (image: Image) => {
       const result = await dispatch(saveImage(image)).unwrap();
       return result;
     },
     onSuccess: () => {
-      // Invalida a query da lista de imagens para refletir o novo status
       queryClient.invalidateQueries({ queryKey: ["image-list"] });
     },
   });
 
-  // Mutation para deletar imagem
   const deleteImageMutation = useMutation({
     mutationFn: async (id: string) => {
       const result = await dispatch(deleteImage(id)).unwrap();
       return result;
     },
     onSuccess: () => {
-      // Invalida a query da lista de imagens para refletir o novo status
       queryClient.invalidateQueries({ queryKey: ["image-list"] });
     },
   });
 
-  // Mutation para limpar todas as imagens
   const clearAllImagesMutation = useMutation({
     mutationFn: async () => {
       const result = await dispatch(clearAllImages()).unwrap();
       return result;
     },
     onSuccess: () => {
-      // Invalida a query da lista de imagens para refletir o novo status
       queryClient.invalidateQueries({ queryKey: ["image-list"] });
     },
   });
 
-  // Função para recarregar imagens salvas
   const refreshSavedImages = useCallback(() => {
     dispatch(loadSavedImages());
   }, [dispatch]);
 
-  // Função para salvar uma imagem
   const saveImageHandler = useCallback(
     async (image: Image) => {
       try {
@@ -81,7 +72,6 @@ export const useImageOperations = () => {
     [saveImageMutation]
   );
 
-  // Função para deletar uma imagem
   const deleteImageHandler = useCallback(
     async (id: string) => {
       try {
@@ -94,7 +84,6 @@ export const useImageOperations = () => {
     [deleteImageMutation]
   );
 
-  // Função para limpar todas as imagens
   const clearAllImagesHandler = useCallback(async () => {
     try {
       await clearAllImagesMutation.mutateAsync();
@@ -104,7 +93,6 @@ export const useImageOperations = () => {
     }
   }, [clearAllImagesMutation]);
 
-  // Função para limpar erros específicos
   const clearErrorHandler = useCallback(
     (errorType: keyof typeof errors) => {
       dispatch(clearError(errorType));
@@ -112,37 +100,23 @@ export const useImageOperations = () => {
     [dispatch]
   );
 
-  // Função para resetar estado de uma operação específica
-  const resetOperationStatusHandler = useCallback(
-    (operation: keyof typeof status) => {
-      // Esta função pode ser implementada se necessário
-      console.log(`Reset operation status: ${operation}`);
-    },
-    []
-  );
-
   return {
-    // Estados das imagens salvas (Redux)
     savedImages: savedImages || [],
 
-    // Estados de loading granulares (Redux)
     loadingSavedImages: status.saved === "pending",
     savingImage: saveImageMutation.isPending,
     deletingImage: deleteImageMutation.isPending,
     clearingAllImages: clearAllImagesMutation.isPending,
 
-    // Estados de erro granulares (Redux)
     savedImagesError: errors.saved,
     saveImageError: errors.save,
     deleteImageError: errors.delete,
     clearAllImagesError: errors.clearAll,
 
-    // Ações
     refreshSavedImages,
     saveImage: saveImageHandler,
     deleteImage: deleteImageHandler,
     clearAllImages: clearAllImagesHandler,
     clearError: clearErrorHandler,
-    resetOperationStatus: resetOperationStatusHandler,
   };
 };

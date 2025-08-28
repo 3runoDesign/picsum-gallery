@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import {
   Dimensions,
   FlatList,
@@ -19,61 +19,75 @@ interface SavedImageGridProps {
 
 const numColumns = 2;
 const { width } = Dimensions.get("window");
-const itemSize = (width - 30) / numColumns; // 15 de padding horizontal
+const itemSize = (width - 30) / numColumns;
 
-export const SavedImageGrid = memo<SavedImageGridProps>(({
-  images,
-  onImagePress,
-  onDeleteImage,
-  isDeleting = false,
-}) => {
-  const renderImage = ({ item }: { item: Image }) => (
-    <View style={styles.imageContainer}>
-      <Pressable onPress={() => onImagePress?.(item)}>
-        <CustomImage 
-          source={{ uri: item.url }} 
-          style={styles.image}
-          // Mostra loading individual para cada imagem
-        />
-      </Pressable>
-      
-      {onDeleteImage && (
-        <Pressable
-          style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
-          onPress={() => onDeleteImage(item)}
-          disabled={isDeleting}
-        >
-          <Text style={styles.deleteButtonText}>
-            {isDeleting ? "Excluindo..." : "Excluir"}
-          </Text>
-        </Pressable>
-      )}
-      
-      <View style={styles.imageOverlay}>
-        <Text style={styles.authorText}>{item.author}</Text>
-        <Text style={styles.dimensionsText}>
-          {item.width} x {item.height}
-        </Text>
-      </View>
-    </View>
-  );
+export const SavedImageGrid = memo<SavedImageGridProps>(
+  ({ images, onImagePress, onDeleteImage, isDeleting = false }) => {
+    const handleImagePress = useCallback(
+      (image: Image) => {
+        onImagePress?.(image);
+      },
+      [onImagePress]
+    );
 
-  return (
-    <FlatList
-      data={images}
-      keyExtractor={(item) => item.id}
-      numColumns={numColumns}
-      contentContainerStyle={styles.listContainer}
-      renderItem={renderImage}
-      showsVerticalScrollIndicator={false}
-      // Melhora a performance da lista
-      removeClippedSubviews={true}
-      maxToRenderPerBatch={10}
-      windowSize={10}
-      initialNumToRender={10}
-    />
-  );
-});
+    const handleDeleteImage = useCallback(
+      (image: Image) => {
+        onDeleteImage?.(image);
+      },
+      [onDeleteImage]
+    );
+
+    const renderImage = useCallback(
+      ({ item }: { item: Image }) => (
+        <View style={styles.imageContainer}>
+          <Pressable onPress={() => handleImagePress(item)}>
+            <CustomImage source={{ uri: item.url }} style={styles.image} />
+          </Pressable>
+
+          {onDeleteImage && (
+            <Pressable
+              style={[
+                styles.deleteButton,
+                isDeleting && styles.deleteButtonDisabled,
+              ]}
+              onPress={() => handleDeleteImage(item)}
+              disabled={isDeleting}
+            >
+              <Text style={styles.deleteButtonText}>
+                {isDeleting ? "Excluindo..." : "Excluir"}
+              </Text>
+            </Pressable>
+          )}
+
+          <View style={styles.imageOverlay}>
+            <Text style={styles.authorText}>{item.author}</Text>
+            <Text style={styles.dimensionsText}>
+              {item.width} x {item.height}
+            </Text>
+          </View>
+        </View>
+      ),
+      [handleImagePress, handleDeleteImage, isDeleting, onDeleteImage]
+    );
+
+    const keyExtractor = useCallback((item: Image) => item.id, []);
+
+    return (
+      <FlatList
+        data={images}
+        keyExtractor={keyExtractor}
+        numColumns={numColumns}
+        contentContainerStyle={styles.listContainer}
+        renderItem={renderImage}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={10}
+      />
+    );
+  }
+);
 
 SavedImageGrid.displayName = "SavedImageGrid";
 

@@ -6,7 +6,6 @@ export const useImageHistory = () => {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const currentIndexRef = useRef(-1);
 
-  // Atualiza a ref sempre que currentIndex muda
   currentIndexRef.current = currentIndex;
 
   const addImage = useCallback((image: Image) => {

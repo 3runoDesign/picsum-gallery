@@ -25,13 +25,11 @@ export default function ImageDetailScreen() {
   const { saveImage, savingImage, deleteImage, deletingImage, savedImages } =
     useImageOperations();
 
-  // Estado derivado calculado com useMemo para evitar recálculos desnecessários
   const isImageSaved = useMemo(
     () => savedImages.some((img: Image) => img.id === id),
     [savedImages, id]
   );
 
-  // Construir URL do Picsum com altura fixa de 400px
   const getPicsumImageUrl = (
     imageId: string,
     width: number = 400,
@@ -40,7 +38,6 @@ export default function ImageDetailScreen() {
     return `https://picsum.photos/id/${imageId}/${width}/${height}`;
   };
 
-  // Usar URL do Picsum com dimensões fixas se tivermos o ID
   const imageUrl = id ? getPicsumImageUrl(id, 400, 400) : url;
 
   const handleSaveImage = async () => {
@@ -58,9 +55,7 @@ export default function ImageDetailScreen() {
 
     try {
       await saveImage(image);
-    } catch {
-      // Erro tratado pelo ErrorObserver global
-    }
+    } catch {}
   };
 
   const handleGoBack = () => {
@@ -75,12 +70,9 @@ export default function ImageDetailScreen() {
     try {
       await deleteImage(id);
       router.back();
-    } catch {
-      // Erro tratado pelo ErrorObserver global
-    }
+    } catch {}
   };
 
-  // Verificar se a URL existe
   if (!url) {
     return (
       <View style={styles.container}>
@@ -270,9 +262,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   savedStatusText: {
-    color: "#4CAF50", // Green for saved
+    color: "#4CAF50",
   },
   notSavedStatusText: {
-    color: "#FF9800", // Orange for not saved
+    color: "#FF9800",
   },
 });

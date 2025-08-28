@@ -4,6 +4,6 @@ export interface Image {
   author: string;
   width: number;
   height: number;
-  localPath?: string; // Caminho local da imagem salva no dispositivo
-  isSaved?: boolean; // Indica se a imagem já foi salva
+  localPath?: string;
+  isSaved?: boolean;
 }

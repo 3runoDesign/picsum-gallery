@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Button,
@@ -14,10 +14,9 @@ import { useImageOperations } from "../presentation/hooks/useImageOperations";
 import { useRandomImage } from "../presentation/hooks/useRandomImage";
 
 export default function HomeScreen() {
-  // Redux para operações de imagens salvas
-  const { savedImages, refreshSavedImages } = useImageOperations();
+  const { savedImages, refreshSavedImages, saveImage, savingImage } =
+    useImageOperations();
 
-  // TanStack Query para imagem aleatória
   const {
     randomImage,
     isLoading: loadingRandomImage,
@@ -28,26 +27,26 @@ export default function HomeScreen() {
     useImageHistory();
   const router = useRouter();
 
-  // Estado para controlar o carregamento da imagem
   const [imageLoading, setImageLoading] = useState(false);
 
-  // Função para verificar se a imagem atual está salva
+  const savedImagesSet = useMemo(() => {
+    return new Set(savedImages.map((img) => img.id));
+  }, [savedImages]);
+
   const isCurrentImageSaved = useCallback(() => {
     const current = getCurrentImage();
     if (!current) return false;
-    return savedImages.some((img) => img.id === current.id);
-  }, [savedImages, getCurrentImage]);
+    return savedImagesSet.has(current.id);
+  }, [savedImagesSet, getCurrentImage]);
 
-  // Adiciona a imagem aleatória ao histórico quando ela carrega
   useEffect(() => {
     if (randomImage) {
       addImage(randomImage);
-      // Inicia o carregamento da imagem quando uma nova imagem é definida
+
       setImageLoading(true);
     }
   }, [randomImage, addImage]);
 
-  // Atualiza as imagens salvas quando a tela é focada
   useEffect(() => {
     refreshSavedImages();
   }, [refreshSavedImages]);
@@ -55,22 +54,39 @@ export default function HomeScreen() {
   const currentImage = getCurrentImage();
   const currentImageIsSaved = isCurrentImageSaved();
 
-  const handleGoBack = () => {
+  const handleGoBack = useCallback(() => {
     goToPrevious();
-  };
+  }, [goToPrevious]);
 
-  const handleNewImage = () => {
+  const handleNewImage = useCallback(() => {
     refreshRandomImage();
-  };
+  }, [refreshRandomImage]);
 
-  // Handlers para eventos de carregamento da imagem
-  const handleImageLoad = () => {
+  const handleSaveImage = useCallback(async () => {
+    if (!currentImage) return;
+
+    try {
+      await saveImage(currentImage);
+    } catch (error) {
+      console.error("Erro ao salvar imagem:", error);
+    }
+  }, [currentImage, saveImage]);
+
+  const handleImageLoad = useCallback(() => {
     setImageLoading(false);
-  };
+  }, []);
 
-  const handleImageLoadStart = () => {
+  const handleImageLoadStart = useCallback(() => {
     setImageLoading(true);
-  };
+  }, []);
+
+  const handleGalleryPress = useCallback(() => {
+    router.push("/gallery");
+  }, [router]);
+
+  const handleSavedPress = useCallback(() => {
+    router.push("/saved");
+  }, [router]);
 
   return (
     <View style={styles.container}>
@@ -91,20 +107,31 @@ export default function HomeScreen() {
               onLoad={handleImageLoad}
               onLoadEnd={handleImageLoad}
             />
-            {imageLoading && (
-              <View style={styles.imageLoadingOverlay}>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.imageLoadingText}>
-                  Renderizando imagem...
-                </Text>
-              </View>
-            )}
-            {/* Indicador de imagem salva */}
-            {currentImageIsSaved && (
-              <View style={styles.savedIndicator}>
-                <Text style={styles.savedText}>✓ Salva</Text>
-              </View>
-            )}
+
+            {/* Botão de salvar imagem */}
+            <Pressable
+              style={[
+                styles.saveButton,
+                currentImageIsSaved && styles.savedButton,
+                savingImage && styles.savingButton,
+              ]}
+              onPress={handleSaveImage}
+              disabled={currentImageIsSaved || savingImage}
+            >
+              <Text
+                style={[
+                  styles.saveButtonText,
+                  currentImageIsSaved && styles.savedButtonText,
+                  savingImage && styles.savingButtonText,
+                ]}
+              >
+                {savingImage
+                  ? "Salvando..."
+                  : currentImageIsSaved
+                  ? "✓ Salva"
+                  : "Salvar Imagem"}
+              </Text>
+            </Pressable>
           </View>
         ) : (
           <Text style={styles.noImageText}>Nenhuma imagem carregada</Text>
@@ -128,17 +155,11 @@ export default function HomeScreen() {
       <Text style={styles.counter}>Imagens Salvas: {savedImages.length}</Text>
 
       <View style={styles.navigationContainer}>
-        <Pressable
-          style={styles.navButton}
-          onPress={() => router.push("/gallery")}
-        >
+        <Pressable style={styles.navButton} onPress={handleGalleryPress}>
           <Text style={styles.navButtonText}>Ver Galeria</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.navButton}
-          onPress={() => router.push("/saved")}
-        >
+        <Pressable style={styles.navButton} onPress={handleSavedPress}>
           <Text style={styles.navButtonText}>Imagens Salvas</Text>
         </Pressable>
       </View>
@@ -177,6 +198,38 @@ const styles = StyleSheet.create({
     width: 300,
     height: 200,
     borderRadius: 8,
+  },
+  saveButton: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    backgroundColor: "#007AFF",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  savedButton: {
+    backgroundColor: "#4CAF50",
+  },
+  savingButton: {
+    backgroundColor: "#FF9500",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  savedButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  savingButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
   },
   imageLoadingOverlay: {
     position: "absolute",

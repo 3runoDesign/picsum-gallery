@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { memo, useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -19,19 +19,19 @@ export const CustomImage = memo<CustomImageProps>(
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const handleLoadStart = () => {
+    const handleLoadStart = useCallback(() => {
       setIsLoading(true);
       setHasError(false);
-    };
+    }, []);
 
-    const handleLoad = () => {
+    const handleLoad = useCallback(() => {
       setIsLoading(false);
-    };
+    }, []);
 
-    const handleError = () => {
+    const handleError = useCallback(() => {
       setIsLoading(false);
       setHasError(true);
-    };
+    }, []);
 
     const imageComponent = (
       <View style={[styles.container, style]}>

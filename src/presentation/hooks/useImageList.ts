@@ -11,7 +11,6 @@ import { AxiosClient } from "../../api/axiosClient";
 import { Image } from "../../domain/entities/Image";
 import { PicsumImage } from "../../domain/entities/PicsumImage";
 
-// Função para buscar imagens da API
 const fetchGalleryImages = async ({ pageParam = 1 }: { pageParam: number }) => {
   const httpClient = new AxiosClient("https://picsum.photos");
   const response = await httpClient.get<PicsumImage[]>(
@@ -53,7 +52,6 @@ export const useImageList = () => {
     gcTime: Duration.of({ minutes: 10 }).inMilliseconds,
   });
 
-  // Flatten das imagens de todas as páginas
   const allImages = data?.pages.flatMap((page) => page.images) ?? [];
 
   return {

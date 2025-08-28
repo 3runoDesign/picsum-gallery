@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { memo, useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -27,27 +27,27 @@ export const ImageWithLocalSupport = memo<ImageWithLocalSupportProps>(
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const handleLoadStart = () => {
+    const handleLoadStart = useCallback(() => {
       setIsLoading(true);
       setHasError(false);
       onLoadStart?.();
-    };
+    }, [onLoadStart]);
 
-    const handleLoad = () => {
+    const handleLoad = useCallback(() => {
       setIsLoading(false);
       setHasError(false);
       onLoad?.();
-    };
+    }, [onLoad]);
 
-    const handleLoadEnd = () => {
+    const handleLoadEnd = useCallback(() => {
       setIsLoading(false);
       onLoadEnd?.();
-    };
+    }, [onLoadEnd]);
 
-    const handleError = () => {
+    const handleError = useCallback(() => {
       setIsLoading(false);
       setHasError(true);
-    };
+    }, []);
 
     return (
       <View style={[styles.container, style]}>
