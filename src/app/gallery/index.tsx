@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -20,8 +20,10 @@ const itemSize = (width - 30) / numColumns; // 15 de padding horizontal
 
 export default function GalleryScreen() {
   const router = useRouter();
+
+  // TanStack Query para dados da galeria
   const {
-    data,
+    allImages,
     isLoading,
     error,
     fetchNextPage,
@@ -30,8 +32,15 @@ export default function GalleryScreen() {
     refetch,
   } = useImageList();
 
-  const { saveImage, savedImages, loadingSavedImages, refreshSavedImages } =
-    useImageOperations();
+  // Redux para operações de imagens salvas
+  const {
+    saveImage,
+    savedImages,
+    loadingSavedImages,
+    refreshSavedImages,
+    savingImage,
+    deletingImage,
+  } = useImageOperations();
 
   // Estado local para controlar imagens sendo salvas
   const [savingImages, setSavingImages] = useState<Set<string>>(new Set());
@@ -40,9 +49,6 @@ export default function GalleryScreen() {
   const [localSavedImages, setLocalSavedImages] = useState<Set<string>>(
     new Set()
   );
-
-  // Flatten all pages into a single array
-  const allImages = useMemo(() => data?.pages.flat() || [], [data?.pages]);
 
   // Sincroniza imagens salvas da API com estado local de forma otimizada
   useEffect(() => {
@@ -180,9 +186,9 @@ export default function GalleryScreen() {
     <View style={styles.errorContainer}>
       <Text style={styles.errorTitle}>Erro ao carregar galeria</Text>
       <Text style={styles.errorMessage}>
-        {error || "Ocorreu um problema ao carregar as imagens."}
+        {error?.message || "Ocorreu um problema ao carregar as imagens."}
       </Text>
-      <Pressable style={styles.retryButton} onPress={refetch}>
+      <Pressable style={styles.retryButton} onPress={() => refetch()}>
         <Text style={styles.retryButtonText}>Tentar Novamente</Text>
       </Pressable>
     </View>
@@ -192,7 +198,7 @@ export default function GalleryScreen() {
   if (isLoading || loadingSavedImages) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="small" color="#007AFF" />
         <Text style={styles.loadingText}>
           {loadingSavedImages
             ? "Carregando imagens salvas..."

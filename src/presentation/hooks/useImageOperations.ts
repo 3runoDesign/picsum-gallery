@@ -1,139 +1,148 @@
 /**
- * Hook para operações de imagem usando Redux
+ * Hook orquestrador para operações de imagem
  *
- * Este hook substitui o useImageQueries.ts e fornece
- * todas as operações de imagem através do Redux.
+ * Este hook combina TanStack Query (dados da API) e Redux (imagens salvas)
+ * fornecendo uma interface unificada para a UI.
  */
 
-import { useCallback, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../../redux/store";
+import { Image } from "../../domain/entities/Image";
 import {
+  clearAllImages,
   clearError,
   deleteImage,
-  fetchAndSaveRandomImage,
-  fetchRandomImage,
   loadSavedImages,
-  resetGalleryState,
   saveImage,
-  clearAllImages,
 } from "../../redux/reducers/imageReducer";
+import { AppDispatch, RootState } from "../../redux/store";
 
 export const useImageOperations = () => {
   const dispatch = useDispatch<AppDispatch>();
-  
-  // Estados do Redux
-  const {
-    savedImages,
-    randomImage,
-    status,
-    errors,
-  } = useSelector((state: RootState) => state.images);
+  const queryClient = useQueryClient();
 
-  // Carrega imagens salvas quando o hook é montado
-  useEffect(() => {
-    if (status.saved === 'idle') {
-      dispatch(loadSavedImages());
-    }
-  }, [dispatch, status.saved]);
+  // Estados do Redux (apenas imagens salvas)
+  const { savedImages, status, errors } = useSelector(
+    (state: RootState) => state.images
+  );
+
+  // Mutation para salvar imagem
+  const saveImageMutation = useMutation({
+    mutationFn: async (image: Image) => {
+      const result = await dispatch(saveImage(image)).unwrap();
+      return result;
+    },
+    onSuccess: () => {
+      // Invalida a query da lista de imagens para refletir o novo status
+      queryClient.invalidateQueries({ queryKey: ["image-list"] });
+    },
+  });
+
+  // Mutation para deletar imagem
+  const deleteImageMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await dispatch(deleteImage(id)).unwrap();
+      return result;
+    },
+    onSuccess: () => {
+      // Invalida a query da lista de imagens para refletir o novo status
+      queryClient.invalidateQueries({ queryKey: ["image-list"] });
+    },
+  });
+
+  // Mutation para limpar todas as imagens
+  const clearAllImagesMutation = useMutation({
+    mutationFn: async () => {
+      const result = await dispatch(clearAllImages()).unwrap();
+      return result;
+    },
+    onSuccess: () => {
+      // Invalida a query da lista de imagens para refletir o novo status
+      queryClient.invalidateQueries({ queryKey: ["image-list"] });
+    },
+  });
 
   // Função para recarregar imagens salvas
   const refreshSavedImages = useCallback(() => {
     dispatch(loadSavedImages());
   }, [dispatch]);
 
-  // Função para buscar nova imagem aleatória
-  const refreshRandomImage = useCallback(() => {
-    dispatch(fetchRandomImage());
-  }, [dispatch]);
-
   // Função para salvar uma imagem
   const saveImageHandler = useCallback(
-    async (image: any) => {
+    async (image: Image) => {
       try {
-        await dispatch(saveImage(image)).unwrap();
+        await saveImageMutation.mutateAsync(image);
       } catch (error) {
         console.error("Erro ao salvar imagem:", error);
         throw error;
       }
     },
-    [dispatch]
+    [saveImageMutation]
   );
 
   // Função para deletar uma imagem
   const deleteImageHandler = useCallback(
     async (id: string) => {
       try {
-        await dispatch(deleteImage(id)).unwrap();
+        await deleteImageMutation.mutateAsync(id);
       } catch (error) {
         console.error("Erro ao deletar imagem:", error);
         throw error;
       }
     },
-    [dispatch]
+    [deleteImageMutation]
   );
 
   // Função para limpar todas as imagens
   const clearAllImagesHandler = useCallback(async () => {
     try {
-      await dispatch(clearAllImages()).unwrap();
+      await clearAllImagesMutation.mutateAsync();
     } catch (error) {
       console.error("Erro ao limpar todas as imagens:", error);
       throw error;
     }
-  }, [dispatch]);
-
-  // Função para buscar e salvar uma imagem aleatória
-  const fetchAndSaveRandomImageHandler = useCallback(async () => {
-    try {
-      console.log("Iniciando busca e salvamento de imagem aleatória...");
-      const result = await dispatch(fetchAndSaveRandomImage()).unwrap();
-      console.log("Imagem buscada e salva com sucesso:", result);
-    } catch (error) {
-      console.error("Erro ao buscar e salvar imagem aleatória:", error);
-      throw error;
-    }
-  }, [dispatch]);
+  }, [clearAllImagesMutation]);
 
   // Função para limpar erros específicos
-  const clearErrorHandler = useCallback((errorType: keyof typeof errors) => {
-    dispatch(clearError(errorType));
-  }, [dispatch]);
+  const clearErrorHandler = useCallback(
+    (errorType: keyof typeof errors) => {
+      dispatch(clearError(errorType));
+    },
+    [dispatch]
+  );
 
-  // Função para resetar estado da galeria
-  const resetGalleryStateHandler = useCallback(() => {
-    dispatch(resetGalleryState());
-  }, [dispatch]);
+  // Função para resetar estado de uma operação específica
+  const resetOperationStatusHandler = useCallback(
+    (operation: keyof typeof status) => {
+      // Esta função pode ser implementada se necessário
+      console.log(`Reset operation status: ${operation}`);
+    },
+    []
+  );
 
   return {
-    // Estados das imagens
+    // Estados das imagens salvas (Redux)
     savedImages: savedImages || [],
-    randomImage,
 
-    // Estados de loading granulares
-    loadingSavedImages: status.saved === 'pending',
-    loadingRandomImage: status.random === 'pending',
-    savingImage: status.save === 'pending',
-    deletingImage: status.delete === 'pending',
-    clearingAllImages: status.clearAll === 'pending',
-    fetchingAndSaving: status.fetchAndSave === 'pending',
+    // Estados de loading granulares (Redux)
+    loadingSavedImages: status.saved === "pending",
+    savingImage: saveImageMutation.isPending,
+    deletingImage: deleteImageMutation.isPending,
+    clearingAllImages: clearAllImagesMutation.isPending,
 
-    // Estados de erro granulares
+    // Estados de erro granulares (Redux)
     savedImagesError: errors.saved,
-    randomImageError: errors.random,
     saveImageError: errors.save,
     deleteImageError: errors.delete,
-    fetchAndSaveError: errors.fetchAndSave,
-    galleryError: errors.gallery,
+    clearAllImagesError: errors.clearAll,
 
     // Ações
     refreshSavedImages,
-    refreshRandomImage,
     saveImage: saveImageHandler,
     deleteImage: deleteImageHandler,
     clearAllImages: clearAllImagesHandler,
-    fetchAndSaveRandomImage: fetchAndSaveRandomImageHandler,
     clearError: clearErrorHandler,
-    resetGalleryState: resetGalleryStateHandler,
+    resetOperationStatus: resetOperationStatusHandler,
   };
 };

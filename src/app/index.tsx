@@ -11,19 +11,18 @@ import {
 import { ImageWithLocalSupport } from "../presentation/components/ImageWithLocalSupport";
 import { useImageHistory } from "../presentation/hooks/useImageHistory";
 import { useImageOperations } from "../presentation/hooks/useImageOperations";
+import { useRandomImage } from "../presentation/hooks/useRandomImage";
 
 export default function HomeScreen() {
+  // Redux para operações de imagens salvas
+  const { savedImages, refreshSavedImages } = useImageOperations();
+
+  // TanStack Query para imagem aleatória
   const {
-    savedImages,
     randomImage,
-    loadingRandomImage,
-    savingImage,
-    fetchingAndSaving,
-    refreshRandomImage,
-    saveImage,
-    fetchAndSaveRandomImage,
-    refreshSavedImages,
-  } = useImageOperations();
+    isLoading: loadingRandomImage,
+    refetch: refreshRandomImage,
+  } = useRandomImage();
 
   const { addImage, goToPrevious, getCurrentImage, canGoBack } =
     useImageHistory();
@@ -56,18 +55,8 @@ export default function HomeScreen() {
   const currentImage = getCurrentImage();
   const currentImageIsSaved = isCurrentImageSaved();
 
-  const handleSaveCurrentImage = () => {
-    if (currentImage && !currentImageIsSaved) {
-      saveImage(currentImage);
-    }
-  };
-
   const handleGoBack = () => {
     goToPrevious();
-  };
-
-  const handleFetchAndSave = () => {
-    fetchAndSaveRandomImage();
   };
 
   const handleNewImage = () => {
@@ -133,18 +122,6 @@ export default function HomeScreen() {
           title="Imagem Anterior"
           onPress={handleGoBack}
           disabled={!canGoBack}
-        />
-
-        <Button
-          title="Salvar Imagem Atual"
-          onPress={handleSaveCurrentImage}
-          disabled={!currentImage || savingImage || currentImageIsSaved}
-        />
-
-        <Button
-          title="Buscar e Salvar Nova"
-          onPress={handleFetchAndSave}
-          disabled={fetchingAndSaving}
         />
       </View>
 
